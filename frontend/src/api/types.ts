@@ -11,6 +11,8 @@ export interface EvidenceThesis {
   thesis_type?: string | null
   /** cosine similarity to the query, 0..1 */
   similarity: number
+  /** public repository landing page (repo source only); null when unavailable */
+  url?: string | null
 }
 
 export interface MentorRecommendation {
@@ -48,6 +50,8 @@ export interface ThesisOut {
   keywords: string[]
   /** 'repo' | 'schedule' */
   source: string
+  /** public repository landing page (repo source only); null when unavailable */
+  url?: string | null
 }
 
 export interface MentorDetail {

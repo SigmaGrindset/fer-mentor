@@ -15,6 +15,7 @@ from datetime import datetime
 from sqlalchemy import bindparam, select
 from sqlalchemy.orm import Session
 
+from core.links import thesis_url
 from core.models import Mentor, Thesis, ThesisEmbedding
 from core.schemas import EvidenceThesis, MentorRecommendation
 
@@ -112,6 +113,8 @@ def recommend(
             Thesis.title_en,
             Thesis.year,
             Thesis.thesis_type,
+            Thesis.urn,
+            Thesis.source,
             sim_expr,
         )
         .join(ThesisEmbedding, ThesisEmbedding.thesis_id == Thesis.id)
@@ -175,6 +178,7 @@ def recommend(
                 year=h.year,
                 thesis_type=h.thesis_type,
                 similarity=round(float(h.similarity), 4),
+                url=thesis_url(h.source, h.urn),
             )
             for h in hits_sorted[:EVIDENCE_SHOWN]
         ]

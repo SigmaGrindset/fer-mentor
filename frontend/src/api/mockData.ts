@@ -40,6 +40,7 @@ export const MOCK_MENTORS: MockMentor[] = [
         scientific_field: 'računalni vid',
         keywords: ['računalni vid', 'CNN', 'klasifikacija slika', 'autonomna vožnja'],
         source: 'repo',
+        url: 'https://urn.nsk.hr/urn:nbn:hr:168:101023',
         abstract:
           'Rad istražuje primjenu konvolucijskih neuronskih mreža za detekciju prometnih znakova u stvarnom vremenu.',
       },
@@ -51,6 +52,7 @@ export const MOCK_MENTORS: MockMentor[] = [
         scientific_field: 'obrada slike',
         keywords: ['segmentacija', 'duboko učenje', 'medicinska slika', 'U-Net'],
         source: 'repo',
+        url: 'https://urn.nsk.hr/urn:nbn:hr:168:102022',
         abstract: 'Model temeljen na U-Net arhitekturi za semantičku segmentaciju tumora.',
       },
       {
@@ -61,6 +63,7 @@ export const MOCK_MENTORS: MockMentor[] = [
         scientific_field: 'računalni vid',
         keywords: ['praćenje objekata', 'video', 'računalni vid'],
         source: 'repo',
+        url: 'https://urn.nsk.hr/urn:nbn:hr:168:103024',
         abstract: 'Usporedba metoda za praćenje više objekata u videosekvencama.',
       },
     ],
@@ -83,6 +86,7 @@ export const MOCK_MENTORS: MockMentor[] = [
         scientific_field: 'obrada prirodnog jezika',
         keywords: ['obrada prirodnog jezika', 'analiza sentimenta', 'transformeri', 'BERT'],
         source: 'repo',
+        url: 'https://urn.nsk.hr/urn:nbn:hr:168:201023',
         abstract: 'Fino ugađanje BERT modela za klasifikaciju sentimenta na hrvatskom korpusu.',
       },
       {
@@ -125,6 +129,7 @@ export const MOCK_MENTORS: MockMentor[] = [
         scientific_field: 'web aplikacije',
         keywords: ['web aplikacije', 'React', 'REST API', 'programsko inženjerstvo'],
         source: 'repo',
+        url: 'https://urn.nsk.hr/urn:nbn:hr:168:301023',
         abstract: 'Potpuna web-aplikacija s React sučeljem i REST poslužiteljem.',
       },
       {
@@ -167,6 +172,7 @@ export const MOCK_MENTORS: MockMentor[] = [
         scientific_field: 'kibernetička sigurnost',
         keywords: ['sigurnost', 'računalne mreže', 'detekcija upada', 'strojno učenje'],
         source: 'repo',
+        url: 'https://urn.nsk.hr/urn:nbn:hr:168:401023',
         abstract: 'IDS sustav koji klasificira mrežni promet i otkriva anomalije.',
       },
       {

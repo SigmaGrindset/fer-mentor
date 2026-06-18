@@ -90,7 +90,18 @@ export function MentorCard({ mentor, rank }: { mentor: MentorRecommendation; ran
                   {mentor.evidence.map((ev) => (
                     <li key={ev.id} className="flex items-start justify-between gap-4 py-3">
                       <div className="min-w-0">
-                        <p className="text-sm leading-snug text-ink">{ev.title}</p>
+                        {ev.url ? (
+                          <a
+                            href={ev.url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-sm leading-snug text-ink decoration-brand-200 underline-offset-4 hover:text-brand hover:underline"
+                          >
+                            {ev.title}
+                          </a>
+                        ) : (
+                          <p className="text-sm leading-snug text-ink">{ev.title}</p>
+                        )}
                         <div className="mt-1 flex flex-wrap items-center gap-2 font-mono text-[0.7rem] uppercase tracking-wide text-muted">
                           {ev.year && <span className="tnum">{ev.year}</span>}
                           {formatThesisType(ev.thesis_type) && (

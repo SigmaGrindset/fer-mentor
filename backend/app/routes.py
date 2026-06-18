@@ -9,6 +9,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import distinct, func, select
 from sqlalchemy.orm import Session
 
+from core.links import thesis_url
 from core.models import Course, CourseOffering, Mentor, Programme, Thesis
 from core.schemas import (
     CourseDetail,
@@ -145,6 +146,7 @@ def get_mentor(mentor_id: int, db: Session = Depends(get_db)) -> MentorDetail:
                 scientific_field=t.scientific_field,
                 keywords=t.keywords or [],
                 source=t.source,
+                url=thesis_url(t.source, t.urn),
             )
             for t in theses
         ],

@@ -109,6 +109,7 @@ function toEvidence(t: MockThesis, similarity: number): EvidenceThesis {
     year: t.year,
     thesis_type: t.thesis_type,
     similarity,
+    url: t.url,
   }
 }
 
@@ -121,6 +122,7 @@ function toThesisOut(t: MockThesis): ThesisOut {
     scientific_field: t.scientific_field,
     keywords: t.keywords,
     source: t.source,
+    url: t.url,
   }
 }
 

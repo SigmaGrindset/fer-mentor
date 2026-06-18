@@ -86,7 +86,18 @@ export function MentorPage() {
               <ul className="mt-4 divide-y divide-hairline border-t border-hairline">
                 {data.theses.map((thesis) => (
                   <li key={thesis.id} className="py-4">
-                    <p className="leading-snug text-ink">{thesis.title}</p>
+                    {thesis.url ? (
+                      <a
+                        href={thesis.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="leading-snug text-ink decoration-brand-200 underline-offset-4 hover:text-brand hover:underline"
+                      >
+                        {thesis.title}
+                      </a>
+                    ) : (
+                      <p className="leading-snug text-ink">{thesis.title}</p>
+                    )}
                     <div className="mt-1.5 flex flex-wrap items-center gap-2 font-mono text-[0.7rem] uppercase tracking-wide text-muted">
                       {thesis.year && <span className="tnum">{thesis.year}</span>}
                       {formatThesisType(thesis.thesis_type) && (

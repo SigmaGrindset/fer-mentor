@@ -16,6 +16,7 @@ class EvidenceThesis(BaseModel):
     year: int | None = None
     thesis_type: str | None = None
     similarity: float  # cosine similarity to the query, 0..1
+    url: str | None = None  # public repository landing page (repo source only)
 
 
 class MentorRecommendation(BaseModel):
@@ -49,6 +50,7 @@ class ThesisOut(BaseModel):
     scientific_field: str | None = None
     keywords: list[str] = Field(default_factory=list)
     source: str  # 'repo' | 'schedule'
+    url: str | None = None  # public repository landing page (repo source only)
 
 
 class MentorDetail(BaseModel):
