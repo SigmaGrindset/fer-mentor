@@ -1,26 +1,75 @@
+# ---------------------------------------------------------------------------
 # Python
+# ---------------------------------------------------------------------------
 __pycache__/
 *.py[cod]
+*$py.class
 .venv/
 venv/
+env/
 *.egg-info/
+.eggs/
+build/
+dist/
 .pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.python-version
 
-# Env
+# ---------------------------------------------------------------------------
+# Environment / secrets  (keep .env.example tracked)
+# ---------------------------------------------------------------------------
 .env
+.env.*
+!.env.example
 
-# Node / frontend
+# ---------------------------------------------------------------------------
+# Node / frontend (Vite)
+# ---------------------------------------------------------------------------
 node_modules/
 frontend/dist/
+frontend/dist-ssr/
 frontend/.vite/
+*.tsbuildinfo
+*.local
 
-# Data caches (keep source HTML, ignore harvest cache & artifacts)
+# ---------------------------------------------------------------------------
+# Data — keep source inputs, ignore regenerable harvest cache & artifacts
+# (data/raw is the ~200 MB scrape/OAI cache; rebuildable via ingestion scripts)
+# ---------------------------------------------------------------------------
 data/raw/
 data/cache/
 *.parquet
 embeddings/*.npy
 
+# Defense-schedule HTML — contains student personal data, keep out of the repo
+data/*.html
+
+# ML model caches (downloaded at runtime, never commit)
+.cache/
+models/
+*.gguf
+*.safetensors
+
+# ---------------------------------------------------------------------------
+# Logs & scratch
+# ---------------------------------------------------------------------------
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+tmp/
+.tmp/
+
+# ---------------------------------------------------------------------------
 # OS / editor
+# ---------------------------------------------------------------------------
 .DS_Store
+Thumbs.db
+desktop.ini
 .idea/
 .vscode/
+!.vscode/extensions.json
