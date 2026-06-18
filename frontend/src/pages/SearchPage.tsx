@@ -1,0 +1,122 @@
+import { useEffect, useRef, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
+import { useRecommend } from '../api'
+import { MentorCard } from '../components/MentorCard'
+import { SearchForm, type SearchValues } from '../components/SearchForm'
+import { Spinner } from '../components/Spinner'
+import { StateMessage } from '../components/StateMessage'
+
+export function SearchPage() {
+  const recommend = useRecommend()
+  const [params, setParams] = useSearchParams()
+  const [submittedQuery, setSubmittedQuery] = useState<string | null>(null)
+  const initialQuery = params.get('q') ?? ''
+
+  const lastSearched = useRef<string | null>(null)
+
+  function runSearch(query: string, zavod: string) {
+    lastSearched.current = query
+    setSubmittedQuery(query)
+    recommend.mutate({ query, zavod: zavod || null, top_k: 10 })
+  }
+
+  function handleSubmit(values: SearchValues) {
+    setParams(values.query ? { q: values.query } : {}, { replace: true })
+    runSearch(values.query, values.zavod)
+  }
+
+  // Auto-run a search when opened with ?q= (shareable/bookmarkable links).
+  // StrictMode-safe: the timeout scheduled on the first (discarded) mount is
+  // cleared by its cleanup, so the search fires once, on the final mount.
+  useEffect(() => {
+    const q = initialQuery.trim()
+    if (!q || lastSearched.current === q) return
+    const id = setTimeout(() => runSearch(q, ''), 0)
+    return () => clearTimeout(id)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialQuery])
+
+  const results = recommend.data?.results ?? []
+
+  return (
+    <div className="space-y-10">
+      <section className="max-w-3xl">
+        <p className="font-mono text-xs uppercase tracking-[0.2em] text-brand">
+          Preporuka mentora
+        </p>
+        <h1 className="mt-3 font-serif text-4xl font-semibold leading-[1.05] tracking-tightish text-ink sm:text-5xl">
+          Pronađi mentora za svoj rad.
+        </h1>
+        <p className="mt-5 max-w-prose text-[1.05rem] leading-relaxed text-muted">
+          Opiši temu svojim riječima — FERmentor uspoređuje tvoj opis sa svim
+          završnim i diplomskim radovima na FER-u i predlaže mentore čiji se rad
+          najbolje podudara, uz konkretne radove kao dokaz.
+        </p>
+      </section>
+
+      <SearchForm
+        key={initialQuery}
+        initialQuery={initialQuery}
+        pending={recommend.isPending}
+        onSubmit={handleSubmit}
+      />
+
+      <section aria-live="polite">
+        {recommend.isPending && <Spinner label="Pretražujem radove…" />}
+
+        {recommend.isError && (
+          <StateMessage
+            tone="error"
+            title="Došlo je do pogreške pri pretraživanju"
+            description={
+              recommend.error instanceof Error
+                ? recommend.error.message
+                : 'Pokušajte ponovno za nekoliko trenutaka.'
+            }
+          >
+            <button
+              type="button"
+              onClick={() => submittedQuery && recommend.mutate({ query: submittedQuery, top_k: 10 })}
+              className="rounded bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand-dark"
+            >
+              Pokušaj ponovno
+            </button>
+          </StateMessage>
+        )}
+
+        {recommend.isSuccess && results.length === 0 && (
+          <StateMessage
+            title="Nema pronađenih mentora"
+            description="Pokušajte preformulirati temu ili koristiti općenitije pojmove (npr. „računalni vid“, „web aplikacije“)."
+          />
+        )}
+
+        {recommend.isSuccess && results.length > 0 && (
+          <div>
+            <div className="flex items-baseline justify-between border-b border-hairline pb-3">
+              <h2 className="font-serif text-xl font-semibold text-ink">Predloženi mentori</h2>
+              <p className="font-mono text-xs uppercase tracking-[0.14em] text-muted">
+                {results.length} rezultata
+              </p>
+            </div>
+            <p className="mt-3 text-sm text-muted">
+              za temu „<span className="text-ink">{submittedQuery}</span>“
+            </p>
+            <div className="mt-6 space-y-5">
+              {results.map((mentor, i) => (
+                <MentorCard key={mentor.mentor_id} mentor={mentor} rank={i + 1} />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {recommend.isIdle && (
+          <StateMessage
+            title="Spremni za pretragu"
+            description="Unesite opis teme iznad i pritisnite „Pronađi mentore“."
+          />
+        )}
+      </section>
+    </div>
+  )
+}

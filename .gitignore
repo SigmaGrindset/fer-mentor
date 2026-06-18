@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+
+# Env
+.env
+
+# Node / frontend
+node_modules/
+frontend/dist/
+frontend/.vite/
+
+# Data caches (keep source HTML, ignore harvest cache & artifacts)
+data/raw/
+data/cache/
+*.parquet
+embeddings/*.npy
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
