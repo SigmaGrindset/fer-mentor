@@ -20,6 +20,7 @@ from core.models import Mentor, Thesis, ThesisEmbedding
 from core.schemas import EvidenceThesis, MentorRecommendation
 
 from .embedder import encode_query
+from .textmatch import matched_keywords
 
 # --------------------------------------------------------------------------- #
 # Scoring knobs
@@ -63,13 +64,25 @@ def _mentor_score(sims: list[float], weights: list[float]) -> float:
     return mean_term * volume_factor
 
 
-def _explanation(rec_name: str, k: int, evidence: list[EvidenceThesis]) -> str:
-    """Templated Croatian explanation (no LLM)."""
+def _explanation(
+    rec_name: str, k: int, evidence: list[EvidenceThesis], matched: list[str]
+) -> str:
+    """Templated Croatian explanation (no LLM).
+
+    When the query lexically overlaps the mentor's thesis keywords, name those
+    shared terms; otherwise fall back to the generic semantic-similarity wording.
+    """
     if not evidence:
         return f"Preporučeno na temelju semantičke sličnosti radova {rec_name}."
     top = evidence[0]
     god = f" ({top.year})" if top.year else ""
     rada = "rad" if k == 1 else ("rada" if 2 <= k <= 4 else "radova")
+    if matched:
+        pojmovi = ", ".join(f"„{t}”" for t in matched[:3])
+        return (
+            f"Preporučeno jer {rec_name} ima {k} {rada} koji dijele pojmove "
+            f"{pojmovi} — npr. „{top.title}”{god}."
+        )
     return (
         f"Preporučeno jer {rec_name} ima {k} {rada} na sličnu temu, "
         f"npr. „{top.title}”{god}."
@@ -113,6 +126,7 @@ def recommend(
             Thesis.title_en,
             Thesis.year,
             Thesis.thesis_type,
+            Thesis.keywords,
             Thesis.urn,
             Thesis.source,
             sim_expr,
@@ -183,6 +197,8 @@ def recommend(
             for h in hits_sorted[:EVIDENCE_SHOWN]
         ]
         n_matching = len(hits)
+        all_keywords = [kw for h in hits_sorted for kw in (h.keywords or [])]
+        matched = matched_keywords(query, all_keywords)[:6]
         results.append(
             MentorRecommendation(
                 mentor_id=mentor.id,
@@ -192,7 +208,8 @@ def recommend(
                 n_theses=mentor.n_theses_repo + mentor.n_theses_current,
                 evidence=evidence,
                 current_topics=current_topics.get(mentor_id, [])[:10],
-                explanation=_explanation(mentor.display_name, n_matching, evidence),
+                explanation=_explanation(mentor.display_name, n_matching, evidence, matched),
+                matched_keywords=matched,
             )
         )
     return results

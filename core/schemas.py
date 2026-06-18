@@ -27,6 +27,7 @@ class MentorRecommendation(BaseModel):
     n_theses: int
     evidence: list[EvidenceThesis] = Field(default_factory=list)
     current_topics: list[str] = Field(default_factory=list)  # this year's titles (src A)
+    matched_keywords: list[str] = Field(default_factory=list)  # query↔thesis keyword overlap
     explanation: str = ""  # templated, no LLM
 
 
@@ -114,6 +115,7 @@ class CourseRecommendation(BaseModel):
     # Programme names (within the selected level) that offer this as an elective.
     profiles: list[str] = Field(default_factory=list)
     outcomes_snippet: str | None = None  # short excerpt of learning outcomes
+    matched_keywords: list[str] = Field(default_factory=list)  # query↔outcomes term overlap
     explanation: str = ""  # templated, no LLM
     url: str | None = None  # link to the FER course page
 

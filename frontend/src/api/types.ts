@@ -25,6 +25,8 @@ export interface MentorRecommendation {
   evidence: EvidenceThesis[]
   /** this year's titles (source: schedule) */
   current_topics: string[]
+  /** query↔thesis keyword overlap, for chips/highlighting */
+  matched_keywords?: string[]
   /** templated explanation, no LLM */
   explanation: string
 }
@@ -118,6 +120,8 @@ export interface CourseRecommendation {
   /** programme names (within the selected level) that offer this as an elective */
   profiles: string[]
   outcomes_snippet?: string | null
+  /** query↔outcomes term overlap, for chips/highlighting */
+  matched_keywords?: string[]
   /** templated explanation, no LLM */
   explanation: string
   /** link to the FER course page */

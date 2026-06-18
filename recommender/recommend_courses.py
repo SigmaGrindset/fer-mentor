@@ -20,6 +20,7 @@ from core.models import Course, CourseEmbedding, CourseOffering, Programme
 from core.schemas import CourseRecommendation
 
 from .embedder import encode_query
+from .textmatch import matched_query_terms
 
 # Over-fetch factor: a course may have several offerings (semesters) in one
 # programme, so the joined rows out-number distinct courses; we de-dup in Python.
@@ -46,13 +47,19 @@ def _snippet(text: str | None) -> str | None:
     return collapsed[:SNIPPET_CHARS].rsplit(" ", 1)[0] + "…"
 
 
-def _explanation(ects: float | None, semester: int | None) -> str:
+def _explanation(ects: float | None, semester: int | None, matched: list[str]) -> str:
     bits: list[str] = []
     if ects:
         bits.append(f"{ects:g} ECTS")
     if semester:
         bits.append(f"{semester}. semestar")
     suffix = f" ({', '.join(bits)})" if bits else ""
+    if matched:
+        pojmovi = ", ".join(f"„{t}”" for t in matched[:3])
+        return (
+            f"Predloženo jer se tvoji pojmovi {pojmovi} poklapaju s ishodima "
+            f"predmeta{suffix}."
+        )
     return (
         "Predloženo jer se ishodi i sadržaj predmeta poklapaju s tvojim "
         f"opisom interesa{suffix}."
@@ -110,6 +117,7 @@ def recommend_courses(
             Course.name_en,
             Course.ects,
             Course.outcomes,
+            Course.syllabus,
             Course.url,
             CourseOffering.semester,
             (1 - dist).label("similarity"),
@@ -155,6 +163,9 @@ def recommend_courses(
         disp_sem = semester if semester is not None else (
             min(d["semesters"]) if d["semesters"] else None
         )
+        matched = matched_query_terms(
+            query, " ".join(p for p in (r.name_hr, r.name_en, r.outcomes, r.syllabus) if p)
+        )[:6]
         results.append(
             CourseRecommendation(
                 course_id=r.id,
@@ -165,7 +176,8 @@ def recommend_courses(
                 score=round(d["sim"], 4),
                 profiles=_profiles_offering(session, r.id, prog.level),
                 outcomes_snippet=_snippet(r.outcomes),
-                explanation=_explanation(r.ects, disp_sem),
+                matched_keywords=matched,
+                explanation=_explanation(r.ects, disp_sem, matched),
                 url=r.url,
             )
         )

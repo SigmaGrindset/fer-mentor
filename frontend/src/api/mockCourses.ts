@@ -71,6 +71,31 @@ function score(queryTokens: string[], c: MockCourse): number {
   return Math.min(0.96, 0.4 + (hits / queryTokens.length) * 0.55)
 }
 
+/** Query content words that appear in the course text (name/keywords/outcomes). */
+function matchedTerms(queryTokens: string[], c: MockCourse): string[] {
+  const hay = new Set(tokenize(`${c.name} ${c.keywords} ${c.outcomes}`))
+  const out: string[] = []
+  const seen = new Set<string>()
+  for (const q of queryTokens) {
+    if (seen.has(q) || !hay.has(q)) continue
+    seen.add(q)
+    out.push(q)
+  }
+  return out
+}
+
+function buildCourseExplanation(matched: string[], ects: number, semester: number): string {
+  const suffix = ` (${ects} ECTS, ${semester}. semestar)`
+  if (matched.length > 0) {
+    const pojmovi = matched
+      .slice(0, 3)
+      .map((t) => `„${t}”`)
+      .join(', ')
+    return `Predloženo jer se tvoji pojmovi ${pojmovi} poklapaju s ishodima predmeta${suffix}.`
+  }
+  return `Predloženo jer se ishodi i sadržaj predmeta poklapaju s tvojim opisom interesa${suffix}.`
+}
+
 export async function mockGetProgrammes(): Promise<ProgrammeCatalog> {
   await delay(120)
   return { programmes: MOCK_PROGRAMMES }
@@ -93,6 +118,7 @@ export async function mockRecommendCourses(
 
   const results: CourseRecommendation[] = MOCK_COURSES.map((c) => {
     const semester = semBase + c.semester
+    const matched = matchedTerms(tokens, c).slice(0, 6)
     return {
       course_id: MOCK_COURSES.indexOf(c) + 1,
       code: c.code,
@@ -102,7 +128,8 @@ export async function mockRecommendCourses(
       score: Number(score(tokens, c).toFixed(3)),
       profiles: level === 'preddiplomski' ? [prog?.name ?? 'Računarstvo'] : peers.slice(0, 6),
       outcomes_snippet: c.outcomes.charAt(0).toUpperCase() + c.outcomes.slice(1),
-      explanation: `Predloženo jer se ishodi i sadržaj predmeta poklapaju s tvojim opisom interesa (${c.ects} ECTS, ${semester}. semestar).`,
+      matched_keywords: matched,
+      explanation: buildCourseExplanation(matched, c.ects, semester),
       url: `https://www.fer.unizg.hr/predmet/${c.code}`,
     }
   })

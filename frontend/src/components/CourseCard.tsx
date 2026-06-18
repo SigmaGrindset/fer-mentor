@@ -56,6 +56,19 @@ export function CourseCard({ course, rank }: { course: CourseRecommendation; ran
             {course.explanation}
           </p>
 
+          {course.matched_keywords && course.matched_keywords.length > 0 && (
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              {course.matched_keywords.map((kw) => (
+                <span
+                  key={kw}
+                  className="rounded-sm bg-brand-tint px-2 py-0.5 text-xs font-medium text-brand-dark"
+                >
+                  {kw}
+                </span>
+              ))}
+            </div>
+          )}
+
           {course.outcomes_snippet && (
             <div className="mt-5 border-t border-hairline pt-3">
               <button

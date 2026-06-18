@@ -88,17 +88,46 @@ function scoreThesis(queryTokens: string[], t: MockThesis): number {
   return Math.min(0.95, 0.45 + coverage * 0.5)
 }
 
+/** Keyword phrases (from the theses) that share a token with the query. */
+function matchedKeywords(queryTokens: string[], theses: MockThesis[]): string[] {
+  const qset = new Set(queryTokens)
+  const out: string[] = []
+  const seen = new Set<string>()
+  for (const t of theses) {
+    for (const kw of t.keywords) {
+      const key = kw.toLowerCase()
+      if (seen.has(key)) continue
+      if (tokenize(kw).some((kt) => qset.has(kt))) {
+        seen.add(key)
+        out.push(kw)
+      }
+    }
+  }
+  return out
+}
+
 function buildExplanation(
   mentor: MockMentor,
   evidence: EvidenceThesis[],
+  matched: string[],
   matchedFields: string[],
 ): string {
   const n = evidence.length
+  const radWord = n === 1 ? 'rad' : n < 5 ? 'rada' : 'radova'
+  const top = evidence[0]
+  const god = top?.year ? ` (${top.year})` : ''
+  if (matched.length > 0) {
+    const pojmovi = matched
+      .slice(0, 3)
+      .map((t) => `„${t}”`)
+      .join(', ')
+    const npr = top ? ` — npr. „${top.title}”${god}` : ''
+    return `Preporučeno jer ${mentor.full_name} ima ${n} ${radWord} koji dijele pojmove ${pojmovi}${npr}.`
+  }
   const fieldText =
     matchedFields.length > 0
       ? `iz područja ${matchedFields.slice(0, 2).join(' i ')}`
       : 'iz srodnih područja'
-  const radWord = n === 1 ? 'rad' : n < 5 ? 'rada' : 'radova'
   return `${mentor.full_name} mentorira ${n} ${radWord} ${fieldText} koji se podudaraju s vašom temom.`
 }
 
@@ -174,6 +203,10 @@ export async function mockRecommend(req: RecommendRequest): Promise<RecommendRes
       const matchedFields = Array.from(
         new Set(scored.map((x) => x.t.scientific_field).filter((f): f is string => Boolean(f))),
       )
+      const matched = matchedKeywords(
+        effectiveTokens,
+        scored.map((x) => x.t),
+      ).slice(0, 6)
 
       return {
         mentor_id: m.id,
@@ -183,7 +216,8 @@ export async function mockRecommend(req: RecommendRequest): Promise<RecommendRes
         n_theses: m.theses.length,
         evidence,
         current_topics: m.current_topics,
-        explanation: buildExplanation(m, evidence, matchedFields),
+        matched_keywords: matched,
+        explanation: buildExplanation(m, evidence, matched, matchedFields),
         _hasMatch: scored.length > 0,
       } as MentorRecommendation & { _hasMatch: boolean }
     })

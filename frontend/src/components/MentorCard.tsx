@@ -45,6 +45,19 @@ export function MentorCard({ mentor, rank }: { mentor: MentorRecommendation; ran
             {mentor.explanation}
           </p>
 
+          {mentor.matched_keywords && mentor.matched_keywords.length > 0 && (
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              {mentor.matched_keywords.map((kw) => (
+                <span
+                  key={kw}
+                  className="rounded-sm bg-brand-tint px-2 py-0.5 text-xs font-medium text-brand-dark"
+                >
+                  {kw}
+                </span>
+              ))}
+            </div>
+          )}
+
           {mentor.current_topics.length > 0 && (
             <div className="mt-5 border-l-2 border-brand-300 bg-brand-tint/40 px-4 py-3">
               <h4 className="font-mono text-[0.68rem] uppercase tracking-[0.14em] text-brand-dark">
