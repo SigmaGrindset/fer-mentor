@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useCourseRecommend, useProgrammes } from '../api'
 import type { ProgrammeOut } from '../api'
 import { CourseCard } from '../components/CourseCard'
@@ -25,11 +26,16 @@ export function ElectivesPage() {
   const { data: catalog, isPending: loadingProgrammes } = useProgrammes()
   const recommend = useCourseRecommend()
 
-  const [level, setLevel] = useState<Level>('preddiplomski')
-  const [programmeCode, setProgrammeCode] = useState('')
-  const [semester, setSemester] = useState<string>('')
-  const [query, setQuery] = useState('')
+  // Form state is hydrated from the URL so a search is shareable/bookmarkable.
+  const [params, setParams] = useSearchParams()
+  const [level, setLevel] = useState<Level>(
+    params.get('razina') === 'diplomski' ? 'diplomski' : 'preddiplomski',
+  )
+  const [programmeCode, setProgrammeCode] = useState(params.get('smjer') ?? '')
+  const [semester, setSemester] = useState<string>(params.get('sem') ?? '')
+  const [query, setQuery] = useState(params.get('q') ?? '')
   const [submittedQuery, setSubmittedQuery] = useState<string | null>(null)
+  const autoRan = useRef(false)
 
   const programmes = catalog?.programmes ?? []
   const inLevel = useMemo(
@@ -55,6 +61,24 @@ export function ElectivesPage() {
       setProgrammeCode(inLevel[0].code)
     }
   }, [inLevel, programmeCode])
+
+  // Auto-run once from a shared/bookmarked URL (?q=&smjer=…), after the
+  // catalogue has loaded and a valid programme is resolved. Ref-guarded so it
+  // fires a single time (StrictMode-safe).
+  useEffect(() => {
+    if (autoRan.current) return
+    const q = (params.get('q') ?? '').trim()
+    if (!q || !programmeCode || inLevel.length === 0) return
+    autoRan.current = true
+    setSubmittedQuery(q)
+    recommend.mutate({
+      query: q,
+      programme_code: programmeCode,
+      semester: semester === '' ? null : Number(semester),
+      top_k: 12,
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [programmeCode, inLevel])
 
   const semesterOptions = level === 'preddiplomski' ? [5, 6] : [1, 2, 3, 4]
 
@@ -90,6 +114,12 @@ export function ElectivesPage() {
     const q = query.trim()
     if (!q || !programmeCode) return
     setSubmittedQuery(q)
+    const next = new URLSearchParams()
+    next.set('razina', level)
+    next.set('smjer', programmeCode)
+    if (semester) next.set('sem', semester)
+    next.set('q', q)
+    setParams(next, { replace: true })
     recommend.mutate({
       query: q,
       programme_code: programmeCode,

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { useMentorListInfinite } from '../api'
 import { Badge } from '../components/Badge'
 import { MentorListSkeleton } from '../components/Skeleton'
@@ -8,14 +8,30 @@ import { ZavodSelect } from '../components/ZavodSelect'
 import { pluralRadovi } from '../lib/format'
 
 export function MentorListPage() {
-  const [zavod, setZavod] = useState('')
-  const [search, setSearch] = useState('')
-  const [debounced, setDebounced] = useState('')
+  // Filters live in the URL so results are shareable/bookmarkable.
+  const [params, setParams] = useSearchParams()
+  const zavod = params.get('zavod') ?? ''
+  const urlQ = params.get('q') ?? ''
+  // Local mirror for the text input; debounced into the URL below.
+  const [search, setSearch] = useState(urlQ)
 
-  // Debounce the typed query so we don't fire a request per keystroke.
+  function updateParam(key: string, value: string) {
+    setParams(
+      (prev) => {
+        const next = new URLSearchParams(prev)
+        if (value) next.set(key, value)
+        else next.delete(key)
+        return next
+      },
+      { replace: true },
+    )
+  }
+
+  // Debounce the typed query into the URL so we don't fire a request per keystroke.
   useEffect(() => {
-    const id = setTimeout(() => setDebounced(search.trim()), 250)
+    const id = setTimeout(() => updateParam('q', search.trim()), 250)
     return () => clearTimeout(id)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search])
 
   const {
@@ -26,11 +42,11 @@ export function MentorListPage() {
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-  } = useMentorListInfinite({ zavod: zavod || null, q: debounced || null })
+  } = useMentorListInfinite({ zavod: zavod || null, q: urlQ || null })
 
   const mentors = useMemo(() => data?.pages.flatMap((p) => p.mentors) ?? [], [data])
   const total = data?.pages[0]?.total ?? 0
-  const filtered = Boolean(zavod || debounced)
+  const filtered = Boolean(zavod || urlQ)
 
   return (
     <div className="space-y-8">
@@ -83,7 +99,11 @@ export function MentorListPage() {
             </button>
           )}
         </div>
-        <ZavodSelect value={zavod} onChange={setZavod} className="w-full sm:w-52" />
+        <ZavodSelect
+          value={zavod}
+          onChange={(v) => updateParam('zavod', v)}
+          className="w-full sm:w-52"
+        />
       </div>
 
       <div className="flex items-baseline justify-between border-b border-hairline pb-3">
@@ -116,8 +136,8 @@ export function MentorListPage() {
         <StateMessage
           title="Nema pronađenih mentora"
           description={
-            debounced
-              ? `Nijedan mentor ne odgovara pretrazi „${debounced}“. Pokušaj drugačije ime ili poništi filtre.`
+            urlQ
+              ? `Nijedan mentor ne odgovara pretrazi „${urlQ}“. Pokušaj drugačije ime ili poništi filtre.`
               : 'Pokušaj odabrati drugi zavod ili poništiti filtar.'
           }
         />

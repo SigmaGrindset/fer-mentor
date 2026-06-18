@@ -11,6 +11,7 @@ export function SearchPage() {
   const [params, setParams] = useSearchParams()
   const [submittedQuery, setSubmittedQuery] = useState<string | null>(null)
   const initialQuery = params.get('q') ?? ''
+  const initialZavod = params.get('zavod') ?? ''
 
   const lastSearched = useRef<string | null>(null)
 
@@ -21,7 +22,10 @@ export function SearchPage() {
   }
 
   function handleSubmit(values: SearchValues) {
-    setParams(values.query ? { q: values.query } : {}, { replace: true })
+    const next: Record<string, string> = {}
+    if (values.query) next.q = values.query
+    if (values.zavod) next.zavod = values.zavod
+    setParams(next, { replace: true })
     runSearch(values.query, values.zavod)
   }
 
@@ -31,7 +35,7 @@ export function SearchPage() {
   useEffect(() => {
     const q = initialQuery.trim()
     if (!q || lastSearched.current === q) return
-    const id = setTimeout(() => runSearch(q, ''), 0)
+    const id = setTimeout(() => runSearch(q, initialZavod), 0)
     return () => clearTimeout(id)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialQuery])
@@ -55,8 +59,9 @@ export function SearchPage() {
       </section>
 
       <SearchForm
-        key={initialQuery}
+        key={`${initialQuery}|${initialZavod}`}
         initialQuery={initialQuery}
+        initialZavod={initialZavod}
         pending={recommend.isPending}
         onSubmit={handleSubmit}
       />
