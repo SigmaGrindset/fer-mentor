@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom'
 import { useRecommend } from '../api'
 import { MentorCard } from '../components/MentorCard'
 import { SearchForm, type SearchValues } from '../components/SearchForm'
-import { Spinner } from '../components/Spinner'
+import { ResultListSkeleton } from '../components/Skeleton'
 import { StateMessage } from '../components/StateMessage'
 
 export function SearchPage() {
@@ -62,7 +62,14 @@ export function SearchPage() {
       />
 
       <section aria-live="polite">
-        {recommend.isPending && <Spinner label="Pretražujem radove…" />}
+        {recommend.isPending && (
+          <>
+            <span className="sr-only" role="status">
+              Pretražujem radove…
+            </span>
+            <ResultListSkeleton count={4} />
+          </>
+        )}
 
         {recommend.isError && (
           <StateMessage

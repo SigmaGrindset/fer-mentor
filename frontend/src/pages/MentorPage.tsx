@@ -1,7 +1,7 @@
 import { Link, useParams } from 'react-router-dom'
 import { ApiError, useMentor } from '../api'
 import { Badge } from '../components/Badge'
-import { Spinner } from '../components/Spinner'
+import { MentorDetailSkeleton } from '../components/Skeleton'
 import { StateMessage } from '../components/StateMessage'
 import { formatThesisType, pluralRadovi } from '../lib/format'
 
@@ -21,7 +21,14 @@ export function MentorPage() {
         ← Natrag na pretragu
       </Link>
 
-      {isPending && <Spinner label="Učitavam profil mentora…" />}
+      {isPending && (
+        <>
+          <span className="sr-only" role="status">
+            Učitavam profil mentora…
+          </span>
+          <MentorDetailSkeleton />
+        </>
+      )}
 
       {notFound && (
         <StateMessage

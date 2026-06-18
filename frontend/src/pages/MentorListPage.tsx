@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useMentorListInfinite } from '../api'
 import { Badge } from '../components/Badge'
-import { Spinner } from '../components/Spinner'
+import { MentorListSkeleton } from '../components/Skeleton'
 import { StateMessage } from '../components/StateMessage'
 import { ZavodSelect } from '../components/ZavodSelect'
 import { pluralRadovi } from '../lib/format'
@@ -95,7 +95,14 @@ export function MentorListPage() {
         </p>
       </div>
 
-      {isPending && <Spinner label="Učitavam mentore…" />}
+      {isPending && (
+        <>
+          <span className="sr-only" role="status">
+            Učitavam mentore…
+          </span>
+          <MentorListSkeleton />
+        </>
+      )}
 
       {isError && (
         <StateMessage

@@ -3,7 +3,7 @@ import { useCourseRecommend, useProgrammes } from '../api'
 import type { ProgrammeOut } from '../api'
 import { CourseCard } from '../components/CourseCard'
 import { Select, type SelectGroup, type SelectOption } from '../components/Select'
-import { Spinner } from '../components/Spinner'
+import { ResultListSkeleton } from '../components/Skeleton'
 import { StateMessage } from '../components/StateMessage'
 
 type Level = 'preddiplomski' | 'diplomski'
@@ -226,7 +226,14 @@ export function ElectivesPage() {
       </form>
 
       <section aria-live="polite">
-        {recommend.isPending && <Spinner label="Pretražujem izborne predmete…" />}
+        {recommend.isPending && (
+          <>
+            <span className="sr-only" role="status">
+              Pretražujem izborne predmete…
+            </span>
+            <ResultListSkeleton count={4} />
+          </>
+        )}
 
         {recommend.isError && (
           <StateMessage
