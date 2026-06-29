@@ -3,9 +3,11 @@ import { useSearchParams } from 'react-router-dom'
 import { useCourseRecommend, useProgrammes } from '../api'
 import type { ProgrammeOut } from '../api'
 import { CourseCard } from '../components/CourseCard'
+import { RecentSearches } from '../components/RecentSearches'
 import { Select, type SelectGroup, type SelectOption } from '../components/Select'
 import { ResultListSkeleton } from '../components/Skeleton'
 import { StateMessage } from '../components/StateMessage'
+import { RECENT_ELECTIVES, useRecentSearches } from '../hooks/useRecentSearches'
 
 type Level = 'preddiplomski' | 'diplomski'
 
@@ -25,6 +27,7 @@ const EXAMPLES = [
 export function ElectivesPage() {
   const { data: catalog, isPending: loadingProgrammes } = useProgrammes()
   const recommend = useCourseRecommend()
+  const { recent, add, remove } = useRecentSearches(RECENT_ELECTIVES)
 
   // Form state is hydrated from the URL so a search is shareable/bookmarkable.
   const [params, setParams] = useSearchParams()
@@ -71,6 +74,7 @@ export function ElectivesPage() {
     if (!q || !programmeCode || inLevel.length === 0) return
     autoRan.current = true
     setSubmittedQuery(q)
+    add(q)
     recommend.mutate({
       query: q,
       programme_code: programmeCode,
@@ -109,11 +113,11 @@ export function ElectivesPage() {
     setSemester('')
   }
 
-  function submit(e: React.FormEvent) {
-    e.preventDefault()
-    const q = query.trim()
+  function run(rawQuery: string) {
+    const q = rawQuery.trim()
     if (!q || !programmeCode) return
     setSubmittedQuery(q)
+    add(q)
     const next = new URLSearchParams()
     next.set('razina', level)
     next.set('smjer', programmeCode)
@@ -126,6 +130,16 @@ export function ElectivesPage() {
       semester: semester === '' ? null : Number(semester),
       top_k: 12,
     })
+  }
+
+  function submit(e: React.FormEvent) {
+    e.preventDefault()
+    run(query)
+  }
+
+  function pickRecent(q: string) {
+    setQuery(q)
+    run(q)
   }
 
   const results = recommend.data?.results ?? []
@@ -254,6 +268,8 @@ export function ElectivesPage() {
           </div>
         </div>
       </form>
+
+      <RecentSearches items={recent} onPick={pickRecent} onRemove={remove} />
 
       <section aria-live="polite">
         {recommend.isPending && (

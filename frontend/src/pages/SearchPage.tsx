@@ -2,12 +2,15 @@ import { useEffect, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useRecommend } from '../api'
 import { MentorCard } from '../components/MentorCard'
+import { RecentSearches } from '../components/RecentSearches'
 import { SearchForm, type SearchValues } from '../components/SearchForm'
 import { ResultListSkeleton } from '../components/Skeleton'
 import { StateMessage } from '../components/StateMessage'
+import { RECENT_MENTORS, useRecentSearches } from '../hooks/useRecentSearches'
 
 export function SearchPage() {
   const recommend = useRecommend()
+  const { recent, add, remove } = useRecentSearches(RECENT_MENTORS)
   const [params, setParams] = useSearchParams()
   const [submittedQuery, setSubmittedQuery] = useState<string | null>(null)
   const initialQuery = params.get('q') ?? ''
@@ -18,6 +21,7 @@ export function SearchPage() {
   function runSearch(query: string, zavod: string) {
     lastSearched.current = query
     setSubmittedQuery(query)
+    add(query)
     recommend.mutate({ query, zavod: zavod || null, top_k: 10 })
   }
 
@@ -27,6 +31,10 @@ export function SearchPage() {
     if (values.zavod) next.zavod = values.zavod
     setParams(next, { replace: true })
     runSearch(values.query, values.zavod)
+  }
+
+  function pickRecent(query: string) {
+    handleSubmit({ query, zavod: initialZavod })
   }
 
   // Auto-run a search when opened with ?q= (shareable/bookmarkable links).
@@ -65,6 +73,8 @@ export function SearchPage() {
         pending={recommend.isPending}
         onSubmit={handleSubmit}
       />
+
+      <RecentSearches items={recent} onPick={pickRecent} onRemove={remove} />
 
       <section aria-live="polite">
         {recommend.isPending && (

@@ -10,9 +10,10 @@ No LLM is used anywhere — explanations come from a string template.
 """
 from __future__ import annotations
 
+from collections import namedtuple
 from datetime import datetime
 
-from sqlalchemy import bindparam, select
+from sqlalchemy import bindparam, select, text
 from sqlalchemy.orm import Session
 
 from core.links import thesis_url
@@ -20,23 +21,45 @@ from core.models import Mentor, Thesis, ThesisEmbedding
 from core.schemas import EvidenceThesis, MentorRecommendation
 
 from .embedder import encode_query
-from .textmatch import matched_keywords
+from .textmatch import lexical_overlap, matched_keywords
 
 # --------------------------------------------------------------------------- #
 # Scoring knobs
 # --------------------------------------------------------------------------- #
 # How many theses to pull from the vector search before aggregating by mentor.
-CANDIDATE_POOL = 200
+# A deeper pool means a specialist whose best work ranks lower still surfaces.
+CANDIDATE_POOL = 400
+# pgvector HNSW explores at most `hnsw.ef_search` candidates (default 40). With a
+# larger LIMIT that default silently caps recall, so we raise it per query to
+# comfortably exceed the pool. Higher = better recall, slightly slower.
+HNSW_EF_SEARCH = 800
+# Hybrid retrieval: final_sim = cosine + LEXICAL_WEIGHT * lexical_overlap. The
+# lexical term (0..1) rewards exact-terminology/acronym hits the dense model can
+# under-rank. Kept small so semantics still dominate; it only breaks near-ties.
+LEXICAL_WEIGHT = 0.15
+# A thesis whose (pure cosine) similarity is below this is treated as irrelevant:
+# it never counts toward a mentor's score, never appears as evidence, and a
+# mentor with no thesis above it is dropped (honest "no strong match" instead of
+# ten lukewarm hits). Calibrated for bge-m3 on this corpus: its cosines sit in a
+# narrow, high band — even gibberish tops out ~0.45 while genuine topical matches
+# run 0.5–0.73 — so this mainly gates whole off-topic queries to an empty result.
+RELEVANCE_FLOOR = 0.47
 # Recency: newer theses weigh more. Exponential decay with a ~4-year half-life;
 # ALL theses still contribute (weight never reaches 0).
 RECENCY_HALF_LIFE_YEARS = 4.0
 # Prolific mentors shouldn't win on volume alone. We damp the evidence sum by a
 # sublinear factor of the number of matching theses: score = mean_sim_term *
-# count**EVIDENCE_EXPONENT, with at most MAX_EVIDENCE theses contributing.
-EVIDENCE_EXPONENT = 0.35
+# count**EVIDENCE_EXPONENT, with at most MAX_EVIDENCE theses contributing. The
+# exponent is deliberately gentle so a focused mentor with a few strong matches
+# isn't buried by a generalist with many weak ones.
+EVIDENCE_EXPONENT = 0.25
 MAX_EVIDENCE_CONTRIB = 12
 # How many evidence theses to surface per mentor in the response.
 EVIDENCE_SHOWN = 5
+
+# One retrieved candidate thesis: the DB row plus its pure cosine and the
+# blended (hybrid) similarity used for ranking.
+_Hit = namedtuple("_Hit", ["row", "pure", "hybrid"])
 
 
 def _recency_weight(year: int | None, now_year: int) -> float:
@@ -78,9 +101,12 @@ def _explanation(
     god = f" ({top.year})" if top.year else ""
     rada = "rad" if k == 1 else ("rada" if 2 <= k <= 4 else "radova")
     if matched:
-        pojmovi = ", ".join(f"„{t}”" for t in matched[:3])
+        terms = matched[:3]
+        koji = "koji dijeli" if k == 1 else "koji dijele"
+        pojam = "pojam" if len(terms) == 1 else "pojmove"
+        pojmovi = ", ".join(f"„{t}”" for t in terms)
         return (
-            f"Preporučeno jer {rec_name} ima {k} {rada} koji dijele pojmove "
+            f"Preporučeno jer {rec_name} ima {k} {rada} {koji} {pojam} "
             f"{pojmovi} — npr. „{top.title}”{god}."
         )
     return (
@@ -142,20 +168,35 @@ def recommend(
         )
     stmt = stmt.limit(CANDIDATE_POOL)
 
+    # Raise HNSW ef_search for this transaction so the larger pool is backed by a
+    # matching exploration budget (otherwise the default silently caps recall).
+    session.execute(text(f"SET LOCAL hnsw.ef_search = {int(HNSW_EF_SEARCH)}"))
     rows = session.execute(stmt, {"qvec": qvec}).all()
     if not rows:
         return []
 
-    # ----- 2) Aggregate candidates by mentor ---------------------------------
-    by_mentor: dict[int, list] = {}
+    # ----- 2) Hybrid re-rank + relevance floor, then group by mentor ---------
+    # Blend dense cosine with a lexical-overlap bonus, and drop theses below the
+    # floor so weak matches neither pad a mentor's score nor show as evidence.
+    by_mentor: dict[int, list[_Hit]] = {}
     for r in rows:
-        by_mentor.setdefault(r.mentor_id, []).append(r)
+        pure = float(r.similarity)
+        if pure < RELEVANCE_FLOOR:
+            continue
+        doc = " ".join(
+            p for p in (r.title_hr, r.title_en, " ".join(r.keywords or [])) if p
+        )
+        hybrid = pure + LEXICAL_WEIGHT * lexical_overlap(query, doc)
+        by_mentor.setdefault(r.mentor_id, []).append(_Hit(r, pure, hybrid))
 
-    # ----- 3) Score each mentor ----------------------------------------------
-    scored: list[tuple[float, int, list]] = []
+    if not by_mentor:
+        return []
+
+    # ----- 3) Score each mentor (on the hybrid similarity) -------------------
+    scored: list[tuple[float, int, list[_Hit]]] = []
     for mentor_id, hits in by_mentor.items():
-        sims = [float(h.similarity) for h in hits]
-        weights = [_recency_weight(h.year, now_year) for h in hits]
+        sims = [h.hybrid for h in hits]
+        weights = [_recency_weight(h.row.year, now_year) for h in hits]
         score = _mentor_score(sims, weights)
         scored.append((score, mentor_id, hits))
     scored.sort(key=lambda x: x[0], reverse=True)
@@ -184,21 +225,30 @@ def recommend(
         mentor = mentors.get(mentor_id)
         if mentor is None:
             continue
-        hits_sorted = sorted(hits, key=lambda h: float(h.similarity), reverse=True)
+        # Order evidence by the hybrid relevance, but show the honest cosine.
+        hits_sorted = sorted(hits, key=lambda h: h.hybrid, reverse=True)
         evidence = [
             EvidenceThesis(
-                id=h.id,
-                title=(h.title_hr or h.title_en or "").strip() or "(bez naslova)",
-                year=h.year,
-                thesis_type=h.thesis_type,
-                similarity=round(float(h.similarity), 4),
-                url=thesis_url(h.source, h.urn),
+                id=h.row.id,
+                title=(h.row.title_hr or h.row.title_en or "").strip() or "(bez naslova)",
+                year=h.row.year,
+                thesis_type=h.row.thesis_type,
+                similarity=round(h.pure, 4),
+                url=thesis_url(h.row.source, h.row.urn),
             )
             for h in hits_sorted[:EVIDENCE_SHOWN]
         ]
-        n_matching = len(hits)
-        all_keywords = [kw for h in hits_sorted for kw in (h.keywords or [])]
+        all_keywords = [kw for h in hits_sorted for kw in (h.row.keywords or [])]
         matched = matched_keywords(query, all_keywords)[:6]
+        # Count for the explanation. When we name shared concepts, count only the
+        # theses that actually carry one (so "ima N radova koji dijele pojmove …"
+        # is literally true); otherwise report all semantically-similar hits.
+        if matched:
+            n_explain = sum(
+                1 for h in hits_sorted if matched_keywords(query, h.row.keywords or [])
+            )
+        else:
+            n_explain = len(hits)
         results.append(
             MentorRecommendation(
                 mentor_id=mentor.id,
@@ -208,7 +258,7 @@ def recommend(
                 n_theses=mentor.n_theses_repo + mentor.n_theses_current,
                 evidence=evidence,
                 current_topics=current_topics.get(mentor_id, [])[:10],
-                explanation=_explanation(mentor.display_name, n_matching, evidence, matched),
+                explanation=_explanation(mentor.display_name, n_explain, evidence, matched),
                 matched_keywords=matched,
             )
         )

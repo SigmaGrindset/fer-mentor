@@ -143,3 +143,19 @@ def matched_query_terms(query: str, text: str | None) -> list[str]:
             seen.add(norm)
             out.append(orig)
     return out
+
+
+def lexical_overlap(query: str, text: str | None) -> float:
+    """Fraction of the query's content terms that also appear in `text`, 0..1.
+
+    A cheap lexical retrieval signal to blend with dense (vector) similarity:
+    it rewards exact-terminology hits — acronyms and specific terms like "FPGA"
+    or "reinforcement learning" — that pure semantic search can under-rank. Uses
+    the same diacritic-insensitive, prefix-tolerant matcher as the explanations,
+    so Croatian inflection ("vid"/"vida") still counts. Returns 0 when the query
+    carries no content terms (all stopwords) or `text` is empty.
+    """
+    q_terms = set(content_terms(query))
+    if not q_terms:
+        return 0.0
+    return len(matched_query_terms(query, text)) / len(q_terms)
