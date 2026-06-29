@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { Link, NavLink } from 'react-router-dom'
 import { USING_REAL_API } from '../api'
+import { useTheme } from '../hooks/useTheme'
 
 function navClass({ isActive }: { isActive: boolean }) {
   return `relative py-1 text-[0.8rem] font-semibold uppercase tracking-[0.12em] transition-colors ${
@@ -8,6 +9,33 @@ function navClass({ isActive }: { isActive: boolean }) {
       ? 'text-ink after:absolute after:-bottom-[3px] after:left-0 after:h-[2px] after:w-full after:bg-brand'
       : 'text-muted hover:text-ink'
   }`
+}
+
+function ThemeToggle() {
+  const { theme, toggle } = useTheme()
+  const isDark = theme === 'dark'
+  return (
+    <button
+      type="button"
+      onClick={toggle}
+      aria-label={isDark ? 'Uključi svijetlu temu' : 'Uključi tamnu temu'}
+      aria-pressed={isDark}
+      title={isDark ? 'Svijetla tema' : 'Tamna tema'}
+      className="-my-1 rounded p-1.5 text-muted transition-colors hover:text-ink focus:outline-none focus:ring-2 focus:ring-brand-200"
+    >
+      {isDark ? (
+        // Sun — switch back to light
+        <svg className="h-[18px] w-[18px]" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+          <path d="M10 3.5a1 1 0 0 1 1 1V5a1 1 0 1 1-2 0v-.5a1 1 0 0 1 1-1Zm0 9a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Zm0 1.5a1 1 0 0 1 1 1v.5a1 1 0 1 1-2 0V15a1 1 0 0 1 1-1Zm6-4a1 1 0 0 1-1 1h-.5a1 1 0 1 1 0-2h.5a1 1 0 0 1 1 1Zm-11 0a1 1 0 0 1-1 1H3.5a1 1 0 1 1 0-2H4a1 1 0 0 1 1 1Zm9.19-4.19a1 1 0 0 1 0 1.41l-.36.36a1 1 0 1 1-1.41-1.41l.35-.36a1 1 0 0 1 1.42 0Zm-7.07 7.07a1 1 0 0 1 0 1.41l-.36.36a1 1 0 0 1-1.41-1.42l.35-.35a1 1 0 0 1 1.42 0Zm7.07 1.41a1 1 0 0 1-1.42 0l-.35-.35a1 1 0 0 1 1.41-1.42l.36.36a1 1 0 0 1 0 1.41ZM7.05 6.46a1 1 0 0 1-1.42 0l-.35-.36A1 1 0 0 1 6.7 4.69l.35.36a1 1 0 0 1 0 1.41Z" />
+        </svg>
+      ) : (
+        // Moon — switch to dark
+        <svg className="h-[18px] w-[18px]" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+          <path d="M9.5 2.75a.75.75 0 0 0-.86-.74 7.25 7.25 0 1 0 8.35 8.35.75.75 0 0 0-.98-.83 5.75 5.75 0 0 1-7.27-7.27.75.75 0 0 0 .76-.66Z" />
+        </svg>
+      )}
+    </button>
+  )
 }
 
 export function Layout({ children }: { children: ReactNode }) {
@@ -49,6 +77,8 @@ export function Layout({ children }: { children: ReactNode }) {
             <NavLink to="/mentori" className={navClass}>
               Mentori
             </NavLink>
+            <span className="h-4 w-px bg-line" aria-hidden="true" />
+            <ThemeToggle />
           </nav>
         </div>
       </header>

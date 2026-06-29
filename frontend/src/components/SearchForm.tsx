@@ -68,7 +68,7 @@ export function SearchForm({
         <button
           type="submit"
           disabled={pending || query.trim().length === 0}
-          className="inline-flex items-center justify-center gap-2 rounded bg-brand px-7 py-3 text-sm font-semibold tracking-wide text-white transition-colors hover:bg-brand-dark focus:outline-none focus:ring-2 focus:ring-brand-200 disabled:cursor-not-allowed disabled:opacity-40"
+          className="inline-flex items-center justify-center gap-2 rounded bg-brand px-7 py-3 text-sm font-semibold tracking-wide text-white transition-colors hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-200 disabled:cursor-not-allowed disabled:opacity-40"
         >
           {pending ? 'Tražim…' : 'Pronađi mentore'}
           <span aria-hidden="true">→</span>

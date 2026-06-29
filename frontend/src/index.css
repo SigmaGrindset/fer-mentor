@@ -3,6 +3,36 @@
 @tailwind utilities;
 
 @layer base {
+  /* Theme tokens as RGB triplets, consumed via rgb(var(--c-*) / <alpha>) in the
+     Tailwind config. :root = light (the original palette); .dark overrides. */
+  :root {
+    color-scheme: light;
+    --c-paper: 246 244 239; /* #F6F4EF warm off-white */
+    --c-surface: 255 255 255; /* #FFFFFF */
+    --c-ink: 22 32 30; /* #16201E deep teal-charcoal */
+    --c-muted: 107 106 99; /* #6B6A63 */
+    --c-hairline: 228 224 216; /* #E4E0D8 */
+    --c-line: 207 201 189; /* #CFC9BD */
+    --c-section: 241 237 230; /* #F1EDE6 */
+    --c-ochre: 176 125 43; /* #B07D2B */
+    --c-brand-dark: 0 90 110; /* #005A6E accent text / link hover */
+    --c-brand-tint: 227 239 241; /* #E3EFF1 pale teal panels */
+    --c-brand-50: 240 247 248; /* #F0F7F8 select active row */
+  }
+  .dark {
+    color-scheme: dark;
+    --c-paper: 15 21 23; /* #0F1517 deep teal-charcoal canvas */
+    --c-surface: 22 31 34; /* #161F22 raised content */
+    --c-ink: 236 234 227; /* #ECEAE3 warm near-white */
+    --c-muted: 155 155 144; /* #9B9B90 */
+    --c-hairline: 39 48 51; /* #273033 subtle borders */
+    --c-line: 58 70 75; /* #3A464B stronger borders */
+    --c-section: 25 35 39; /* #192327 faint blocks */
+    --c-ochre: 210 162 74; /* #D2A24A brighter so it reads on dark */
+    --c-brand-dark: 127 197 212; /* #7FC5D4 light teal accent text */
+    --c-brand-tint: 16 49 56; /* #103138 dark teal panels */
+    --c-brand-50: 17 41 46; /* #11292E faint teal select row */
+  }
   html {
     scroll-behavior: smooth;
     -webkit-font-smoothing: antialiased;
@@ -10,6 +40,9 @@
   }
   body {
     @apply bg-paper font-sans text-ink;
+    transition:
+      background-color 0.25s ease,
+      color 0.25s ease;
   }
   /* Fraunces: a touch of softness/optical character for display type. */
   .font-serif {

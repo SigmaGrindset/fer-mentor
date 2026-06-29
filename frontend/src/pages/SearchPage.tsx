@@ -99,7 +99,7 @@ export function SearchPage() {
             <button
               type="button"
               onClick={() => submittedQuery && recommend.mutate({ query: submittedQuery, top_k: 10 })}
-              className="rounded bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand-dark"
+              className="rounded bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700"
             >
               Pokušaj ponovno
             </button>

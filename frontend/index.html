@@ -16,6 +16,19 @@
       rel="stylesheet"
     />
     <title>FERmentor — pronađi mentora za svoj rad</title>
+    <!-- Apply theme before first paint to avoid a flash of the light theme.
+         Mirrors useTheme: a plain-string 'fermentor-theme' key, else OS pref. -->
+    <script>
+      (function () {
+        try {
+          var t = localStorage.getItem('fermentor-theme')
+          if (t !== 'light' && t !== 'dark') {
+            t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+          }
+          if (t === 'dark') document.documentElement.classList.add('dark')
+        } catch (e) {}
+      })()
+    </script>
   </head>
   <body>
     <div id="root"></div>

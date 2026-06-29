@@ -243,7 +243,7 @@ export function ElectivesPage() {
           <button
             type="submit"
             disabled={recommend.isPending || query.trim().length === 0 || !programmeCode}
-            className="inline-flex items-center justify-center gap-2 rounded bg-brand px-7 py-3 text-sm font-semibold tracking-wide text-white transition-colors hover:bg-brand-dark focus:outline-none focus:ring-2 focus:ring-brand-200 disabled:cursor-not-allowed disabled:opacity-40"
+            className="inline-flex items-center justify-center gap-2 rounded bg-brand px-7 py-3 text-sm font-semibold tracking-wide text-white transition-colors hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-200 disabled:cursor-not-allowed disabled:opacity-40"
           >
             {recommend.isPending ? 'Tražim…' : 'Pronađi izborne'}
             <span aria-hidden="true">→</span>
