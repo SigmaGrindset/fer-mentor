@@ -13,7 +13,7 @@
  * the per-thesis evidence still shows its honest cosine.
  *
  * Two bands because two different scales feed the meter:
- *  - course relevance is a raw cosine        (~0.45 floor … ~0.72 strong)
+ *  - course relevance is a cosine + small title bonus (~0.45 floor … ~0.72 strong)
  *  - mentor score is an aggregate (mean similarity × sublinear volume factor),
  *    observed across sample queries ~0.55 (single weak match) … ~1.2 (top
  *    specialist); we anchor the top a touch below the max so genuine

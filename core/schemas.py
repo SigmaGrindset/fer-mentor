@@ -111,7 +111,7 @@ class CourseRecommendation(BaseModel):
     name: str  # display title (Croatian, English fallback)
     ects: float | None = None
     semester: int | None = None  # semester within the requested programme
-    score: float  # cosine similarity to the query, 0..1
+    score: float  # relevance (cosine + small title-term bonus), 0..1
     # Programme names (within the selected level) that offer this as an elective.
     profiles: list[str] = Field(default_factory=list)
     outcomes_snippet: str | None = None  # short excerpt of learning outcomes

@@ -13,19 +13,40 @@ from __future__ import annotations
 
 import re
 
-from sqlalchemy import bindparam, select
+from sqlalchemy import bindparam, select, text
 from sqlalchemy.orm import Session
 
 from core.models import Course, CourseEmbedding, CourseOffering, Programme
 from core.schemas import CourseRecommendation
 
 from .embedder import encode_query
-from .textmatch import matched_query_terms
+from .textmatch import lexical_overlap, matched_query_terms
 
 # Over-fetch factor: a course may have several offerings (semesters) in one
 # programme, so the joined rows out-number distinct courses; we de-dup in Python.
 POOL_FACTOR = 10
 SNIPPET_CHARS = 220
+
+# Ranking tie-breaker: final = cosine + LEXICAL_WEIGHT * title_overlap. A course
+# literally *named* after the query's terms ("web", "aplikacija") deserves a nudge
+# the compressed dense model under-ranks. Kept small and matched against the TITLE
+# only — matching the long, generic syllabus prose would hand spurious boosts to
+# off-topic courses. bge-m3's usable cosine band is narrow (~0.47–0.66), so on
+# that scale this is a nudge, not a leap: it settles near-ties without inverting
+# the honest cosine order the meter shows.
+LEXICAL_WEIGHT = 0.06
+# Relevance gate. That same compression means a plain cosine floor can't separate
+# an off-topic elective (~0.54) from a real one. Keep a course only if it shares
+# >=1 content term with the query anywhere in its text (name/outcomes/syllabus)
+# AND clears BASE_FLOOR, OR its pure cosine clears the higher semantics-only bar.
+# Everything else (no shared words + middling cosine) is the noise tail — e.g.
+# "električna i hibridna vozila" for a web/mobile query.
+BASE_FLOOR = 0.47
+SEMANTIC_ONLY_FLOOR = 0.60
+# The programme + is_elective filter is applied *after* the HNSW index scan, so
+# raise ef_search per query or the eligible-elective pool is starved (mirror
+# recommend.py).
+HNSW_EF_SEARCH = 800
 
 
 def _resolve_programme(
@@ -134,6 +155,9 @@ def recommend_courses(
     if semester is not None:
         stmt = stmt.where(CourseOffering.semester == semester)
 
+    # Raise HNSW ef_search for this transaction so the post-index elective filter
+    # doesn't starve the pool (otherwise the default silently caps recall).
+    session.execute(text(f"SET LOCAL hnsw.ef_search = {int(HNSW_EF_SEARCH)}"))
     rows = session.execute(stmt, {"qvec": qvec}).all()
     if not rows:
         return []
@@ -154,7 +178,27 @@ def recommend_courses(
             if r.semester is not None:
                 cur["semesters"].add(r.semester)
 
-    ranked = sorted(best.values(), key=lambda d: d["sim"], reverse=True)[:top_k]
+    # Relevance gate + title tie-breaker. Gate on the FULL text (name + outcomes +
+    # syllabus) so it stays forgiving for paraphrased queries; drop the noise tail
+    # — courses that share no query term AND only reach a middling cosine. Then
+    # nudge the ranking by term overlap with the TITLE only, so a course actually
+    # named after the query rises without off-topic courses riding on stray
+    # syllabus mentions.
+    scored: list[dict] = []
+    for d in best.values():
+        r = d["row"]
+        doc = " ".join(p for p in (r.name_hr, r.name_en, r.outcomes, r.syllabus) if p)
+        pure = d["sim"]
+        if not (pure >= SEMANTIC_ONLY_FLOOR or (lexical_overlap(query, doc) > 0.0 and pure >= BASE_FLOOR)):
+            continue
+        title = " ".join(p for p in (r.name_hr, r.name_en) if p)
+        d["doc"] = doc
+        d["hybrid"] = pure + LEXICAL_WEIGHT * lexical_overlap(query, title)
+        scored.append(d)
+
+    ranked = sorted(scored, key=lambda d: d["hybrid"], reverse=True)[:top_k]
+    if not ranked:
+        return []
 
     results: list[CourseRecommendation] = []
     for d in ranked:
@@ -163,9 +207,7 @@ def recommend_courses(
         disp_sem = semester if semester is not None else (
             min(d["semesters"]) if d["semesters"] else None
         )
-        matched = matched_query_terms(
-            query, " ".join(p for p in (r.name_hr, r.name_en, r.outcomes, r.syllabus) if p)
-        )[:6]
+        matched = matched_query_terms(query, d["doc"])[:6]
         results.append(
             CourseRecommendation(
                 course_id=r.id,
@@ -173,7 +215,9 @@ def recommend_courses(
                 name=(r.name_hr or r.name_en or r.code).strip(),
                 ects=r.ects,
                 semester=disp_sem,
-                score=round(d["sim"], 4),
+                # The hybrid score (cosine + title nudge) is what we rank on, so
+                # display it too — the meter then always descends with rank.
+                score=round(d["hybrid"], 4),
                 profiles=_profiles_offering(session, r.id, prog.level),
                 outcomes_snippet=_snippet(r.outcomes),
                 matched_keywords=matched,
