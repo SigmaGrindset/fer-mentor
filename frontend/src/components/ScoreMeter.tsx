@@ -1,6 +1,16 @@
-/** Refined relevance indicator for a 0..1 score. */
-export function ScoreMeter({ score }: { score: number }) {
-  const pct = Math.round(Math.max(0, Math.min(1, score)) * 100)
+import { calibrateScore, COURSE_BAND, MENTOR_BAND, type ScoreBand } from '../lib/score'
+
+const BANDS: Record<'mentor' | 'course', ScoreBand> = {
+  mentor: MENTOR_BAND,
+  course: COURSE_BAND,
+}
+
+/** Refined relevance indicator. `score` is the raw API score (a mentor
+ *  aggregate or a course cosine); it is calibrated onto a full 0..100% scale
+ *  per `kind` so the narrow model band spreads across the meter — see
+ *  lib/score. */
+export function ScoreMeter({ score, kind }: { score: number; kind: 'mentor' | 'course' }) {
+  const pct = Math.round(calibrateScore(score, BANDS[kind]) * 100)
   const label = pct >= 80 ? 'Vrlo visoko' : pct >= 60 ? 'Visoko' : pct >= 40 ? 'Srednje' : 'Nisko'
 
   return (

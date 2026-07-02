@@ -38,7 +38,7 @@ export function MentorCard({ mentor, rank }: { mentor: MentorRecommendation; ran
                 <span className="text-xs text-muted">{pluralRadovi(mentor.n_theses)}</span>
               </div>
             </div>
-            <ScoreMeter score={mentor.score} />
+            <ScoreMeter score={mentor.score} kind="mentor" />
           </div>
 
           <p className="mt-4 max-w-prose text-[0.95rem] leading-relaxed text-ink/90">

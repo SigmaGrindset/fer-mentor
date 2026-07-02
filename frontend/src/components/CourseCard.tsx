@@ -49,7 +49,7 @@ export function CourseCard({ course, rank }: { course: CourseRecommendation; ran
                 )}
               </div>
             </div>
-            <ScoreMeter score={course.score} />
+            <ScoreMeter score={course.score} kind="course" />
           </div>
 
           <p className="mt-4 max-w-prose text-[0.95rem] leading-relaxed text-ink/90">
