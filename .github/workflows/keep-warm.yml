@@ -1,0 +1,25 @@
+name: keep-warm
+
+# Pings the FERmentor backend on Hugging Face Spaces so the free Space does not
+# go to sleep after 48h of inactivity (which would add a ~12s model-load cold
+# start to the next user request). Runs every 6h; also triggerable manually.
+
+on:
+  schedule:
+    - cron: "17 */6 * * *" # every 6 hours (offset minute avoids top-of-hour cron congestion)
+  workflow_dispatch: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wake Space (health) + warm model (recommend)
+        run: |
+          BASE="https://inoni7-fermentor-api.hf.space"
+          echo "health:"
+          curl -s -o /dev/null -w "  HTTP %{http_code} in %{time_total}s\n" --max-time 180 "$BASE/api/health" || true
+          echo "recommend (warms bge-m3 + Neon):"
+          curl -s -o /dev/null -w "  HTTP %{http_code} in %{time_total}s\n" --max-time 180 \
+            -X POST "$BASE/api/recommend" \
+            -H "Content-Type: application/json" \
+            -d '{"query":"keep warm","top_k":1}' || true
