@@ -4,6 +4,8 @@ React + TypeScript (Vite) sučelje za preporuku mentora. Korisnik opiše temu
 slobodnim tekstom, a aplikacija prikaže rangiranu listu mentora s konkretnim
 radovima kao dokazom podudaranja.
 
+**Live:** https://fermentor.vercel.app
+
 ## Tehnologije
 
 - **Vite** + **React 18** + **TypeScript** (strict)
