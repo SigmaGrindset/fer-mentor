@@ -49,9 +49,13 @@ def get_model() -> SentenceTransformer:
     if _model is None:
         with _lock:
             if _model is None:
-                # Use all CPU cores; tokenizer threads are disabled to avoid
-                # oversubscription (set via TOKENIZERS_PARALLELISM above).
-                torch.set_num_threads(os.cpu_count() or 8)
+                # Intra-op threads. In a container os.cpu_count() reports the
+                # HOST's cores, not the (smaller) cgroup CPU budget — so on a 2
+                # vCPU host that value oversubscribes and thrashes. Honour an
+                # explicit TORCH_NUM_THREADS (set it to the real vCPU count in
+                # deployment); fall back to os.cpu_count() locally.
+                _n_threads = int(os.environ.get("TORCH_NUM_THREADS") or (os.cpu_count() or 8))
+                torch.set_num_threads(max(1, _n_threads))
                 model = SentenceTransformer(settings.embedding_model, device="cpu")
                 # 512 tokens: enough for retrieval, ~7x faster than the native
                 # long context on CPU (applies to bge-m3 and e5 alike).

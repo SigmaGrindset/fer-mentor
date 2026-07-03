@@ -24,5 +24,10 @@ class Settings(BaseSettings):
     # not label the mentor role).
     oai_base_url: str = "https://repozitorij.fer.unizg.hr/oai/"
 
+    # CORS allowed origins for the API (comma-separated). Set CORS_ORIGINS in the
+    # deployed environment to the production frontend URL; *.vercel.app preview
+    # deploys are matched by a regex in the app, so they need not be listed here.
+    cors_origins: str = "http://localhost:5173"
+
 
 settings = Settings()
