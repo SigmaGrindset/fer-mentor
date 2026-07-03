@@ -1,0 +1,17 @@
+# Keep the backend image lean: only core/ recommender/ backend/ are needed.
+data/
+frontend/
+node_modules/
+.venv/
+venv/
+.git/
+__pycache__/
+*.pyc
+*.pyo
+.hf-cache/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+.env
+.env.*
