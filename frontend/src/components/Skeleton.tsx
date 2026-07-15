@@ -72,6 +72,8 @@ export function MentorDetailSkeleton() {
         <div className={`h-3 w-20 ${bar}`} />
         <div className={`mt-3 h-8 w-2/3 ${bar}`} />
         <div className="mt-3 h-3 w-24 rounded bg-section" />
+        <div className="mt-5 h-3 w-32 rounded bg-section" />
+        <div className="mt-2 h-14 max-w-md rounded bg-section" />
         <div className="mt-5 flex flex-wrap gap-2">
           <div className="h-6 w-24 rounded bg-section" />
           <div className="h-6 w-20 rounded bg-section" />

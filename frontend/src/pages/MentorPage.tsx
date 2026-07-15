@@ -1,5 +1,6 @@
 import { Link, useLocation, useParams } from 'react-router-dom'
 import { ApiError, useMentor } from '../api'
+import { ActivityTimeline } from '../components/ActivityTimeline'
 import { Badge } from '../components/Badge'
 import { MentorDetailSkeleton } from '../components/Skeleton'
 import { LoadingStatus, StateMessage } from '../components/StateMessage'
@@ -74,6 +75,8 @@ export function MentorPage() {
               {data.full_name}
             </h1>
             <p className="mt-2 text-sm text-muted">{pluralRadovi(data.n_theses)}</p>
+
+            <ActivityTimeline theses={data.theses} />
 
             {data.scientific_fields.length > 0 && (
               <div className="mt-5">
