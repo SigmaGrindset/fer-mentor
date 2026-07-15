@@ -2,8 +2,9 @@ import { Link, useLocation, useParams } from 'react-router-dom'
 import { ApiError, useMentor } from '../api'
 import { Badge } from '../components/Badge'
 import { MentorDetailSkeleton } from '../components/Skeleton'
-import { StateMessage } from '../components/StateMessage'
+import { LoadingStatus, StateMessage } from '../components/StateMessage'
 import { useDocumentTitle } from '../hooks/useDocumentTitle'
+import { useSlowRequest } from '../hooks/useSlowRequest'
 import { backTarget } from '../lib/backlink'
 import { formatThesisType, pluralRadovi } from '../lib/format'
 
@@ -11,6 +12,7 @@ export function MentorPage() {
   const { id } = useParams<{ id: string }>()
   const numericId = id ? Number(id) : undefined
   const { data, isPending, isError, error } = useMentor(numericId)
+  const slow = useSlowRequest(isPending)
 
   // Return to the search/list we came from, filters intact; the recommender is
   // the fallback for profiles opened directly (shared link, new tab).
@@ -33,9 +35,7 @@ export function MentorPage() {
 
       {isPending && (
         <>
-          <span className="sr-only" role="status">
-            Učitavam profil mentora…
-          </span>
+          <LoadingStatus label="Učitavam profil mentora…" slow={slow} />
           <MentorDetailSkeleton />
         </>
       )}

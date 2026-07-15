@@ -6,9 +6,10 @@ import { CourseCard } from '../components/CourseCard'
 import { RecentSearches } from '../components/RecentSearches'
 import { Select, type SelectGroup, type SelectOption } from '../components/Select'
 import { ResultListSkeleton } from '../components/Skeleton'
-import { StateMessage } from '../components/StateMessage'
+import { LoadingStatus, StateMessage } from '../components/StateMessage'
 import { useDocumentTitle } from '../hooks/useDocumentTitle'
 import { RECENT_ELECTIVES, useRecentSearches } from '../hooks/useRecentSearches'
+import { useSlowRequest } from '../hooks/useSlowRequest'
 import { pluralRezultati } from '../lib/format'
 
 type Level = 'preddiplomski' | 'diplomski'
@@ -30,6 +31,7 @@ export function ElectivesPage() {
   useDocumentTitle('Izborni predmeti')
   const { data: catalog, isPending: loadingProgrammes } = useProgrammes()
   const recommend = useCourseRecommend()
+  const slow = useSlowRequest(recommend.isPending)
   const { recent, add, remove } = useRecentSearches(RECENT_ELECTIVES)
 
   // Form state is hydrated from the URL so a search is shareable/bookmarkable.
@@ -276,9 +278,7 @@ export function ElectivesPage() {
       <section aria-live="polite">
         {recommend.isPending && (
           <>
-            <span className="sr-only" role="status">
-              Pretražujem izborne predmete…
-            </span>
+            <LoadingStatus label="Pretražujem izborne predmete…" slow={slow} />
             <ResultListSkeleton count={4} />
           </>
         )}

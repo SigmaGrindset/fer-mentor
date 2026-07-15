@@ -3,9 +3,10 @@ import { Link, useLocation, useSearchParams } from 'react-router-dom'
 import { useMentorListInfinite } from '../api'
 import { Badge } from '../components/Badge'
 import { MentorListSkeleton } from '../components/Skeleton'
-import { StateMessage } from '../components/StateMessage'
+import { LoadingStatus, StateMessage } from '../components/StateMessage'
 import { ZavodSelect } from '../components/ZavodSelect'
 import { useDocumentTitle } from '../hooks/useDocumentTitle'
+import { useSlowRequest } from '../hooks/useSlowRequest'
 import { backState } from '../lib/backlink'
 import { pluralMentori, pluralRadovi } from '../lib/format'
 
@@ -47,6 +48,7 @@ export function MentorListPage() {
     hasNextPage,
     isFetchingNextPage,
   } = useMentorListInfinite({ zavod: zavod || null, q: urlQ || null })
+  const slow = useSlowRequest(isPending)
 
   const mentors = useMemo(() => data?.pages.flatMap((p) => p.mentors) ?? [], [data])
   const total = data?.pages[0]?.total ?? 0
@@ -121,9 +123,7 @@ export function MentorListPage() {
 
       {isPending && (
         <>
-          <span className="sr-only" role="status">
-            Učitavam mentore…
-          </span>
+          <LoadingStatus label="Učitavam mentore…" slow={slow} />
           <MentorListSkeleton />
         </>
       )}

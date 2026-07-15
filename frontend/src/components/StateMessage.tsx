@@ -24,3 +24,19 @@ export function StateMessage({
     </div>
   )
 }
+
+const WAKING = 'Server se budi, još malo…'
+
+/**
+ * Live status for a pending request. Screen-reader-only while the wait is
+ * normal; once it runs long, the same region surfaces a visible line so a slow
+ * cold start reads as an explained wait rather than a hang. The element stays
+ * mounted across the swap so screen readers announce the change in text.
+ */
+export function LoadingStatus({ label, slow }: { label: string; slow: boolean }) {
+  return (
+    <p role="status" className={slow ? 'mb-4 animate-fade-in text-sm text-muted' : 'sr-only'}>
+      {slow ? WAKING : label}
+    </p>
+  )
+}

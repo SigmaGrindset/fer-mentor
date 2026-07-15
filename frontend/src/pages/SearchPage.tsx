@@ -5,14 +5,16 @@ import { MentorCard } from '../components/MentorCard'
 import { RecentSearches } from '../components/RecentSearches'
 import { SearchForm, type SearchValues } from '../components/SearchForm'
 import { ResultListSkeleton } from '../components/Skeleton'
-import { StateMessage } from '../components/StateMessage'
+import { LoadingStatus, StateMessage } from '../components/StateMessage'
 import { useDocumentTitle } from '../hooks/useDocumentTitle'
 import { RECENT_MENTORS, useRecentSearches } from '../hooks/useRecentSearches'
+import { useSlowRequest } from '../hooks/useSlowRequest'
 import { pluralRezultati } from '../lib/format'
 
 export function SearchPage() {
   useDocumentTitle()
   const recommend = useRecommend()
+  const slow = useSlowRequest(recommend.isPending)
   const { recent, add, remove } = useRecentSearches(RECENT_MENTORS)
   const [params, setParams] = useSearchParams()
   const [submittedQuery, setSubmittedQuery] = useState<string | null>(null)
@@ -82,9 +84,7 @@ export function SearchPage() {
       <section aria-live="polite">
         {recommend.isPending && (
           <>
-            <span className="sr-only" role="status">
-              Pretražujem radove…
-            </span>
+            <LoadingStatus label="Pretražujem radove…" slow={slow} />
             <ResultListSkeleton count={4} />
           </>
         )}
