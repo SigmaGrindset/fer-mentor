@@ -8,6 +8,7 @@ import { ResultListSkeleton } from '../components/Skeleton'
 import { StateMessage } from '../components/StateMessage'
 import { useDocumentTitle } from '../hooks/useDocumentTitle'
 import { RECENT_MENTORS, useRecentSearches } from '../hooks/useRecentSearches'
+import { pluralRezultati } from '../lib/format'
 
 export function SearchPage() {
   useDocumentTitle()
@@ -120,7 +121,7 @@ export function SearchPage() {
             <div className="flex items-baseline justify-between border-b border-hairline pb-3">
               <h2 className="font-serif text-xl font-semibold text-ink">Predloženi mentori</h2>
               <p className="font-mono text-xs uppercase tracking-[0.14em] text-muted">
-                {results.length} rezultata
+                {pluralRezultati(results.length)}
               </p>
             </div>
             <p className="mt-3 text-sm text-muted">

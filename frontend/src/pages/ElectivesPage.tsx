@@ -9,6 +9,7 @@ import { ResultListSkeleton } from '../components/Skeleton'
 import { StateMessage } from '../components/StateMessage'
 import { useDocumentTitle } from '../hooks/useDocumentTitle'
 import { RECENT_ELECTIVES, useRecentSearches } from '../hooks/useRecentSearches'
+import { pluralRezultati } from '../lib/format'
 
 type Level = 'preddiplomski' | 'diplomski'
 
@@ -307,7 +308,7 @@ export function ElectivesPage() {
             <div className="flex items-baseline justify-between border-b border-hairline pb-3">
               <h2 className="font-serif text-xl font-semibold text-ink">Predloženi izborni predmeti</h2>
               <p className="font-mono text-xs uppercase tracking-[0.14em] text-muted">
-                {results.length} rezultata
+                {pluralRezultati(results.length)}
               </p>
             </div>
             {submittedQuery && (

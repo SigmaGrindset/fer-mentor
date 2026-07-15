@@ -19,6 +19,15 @@ export function pluralRadovi(n: number): string {
   return `${n} radova`
 }
 
+/** "1 rezultat" / "3 rezultata" / "5 rezultata" — Croatian plural for results count. */
+export function pluralRezultati(n: number): string {
+  const mod10 = n % 10
+  const mod100 = n % 100
+  // Paukal (2-4) and genitive plural (5+) are both "rezultata".
+  if (mod10 === 1 && mod100 !== 11) return `${n} rezultat`
+  return `${n} rezultata`
+}
+
 export function formatSimilarity(sim: number): string {
   return `${Math.round(sim * 100)}%`
 }
