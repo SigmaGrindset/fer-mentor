@@ -1,8 +1,9 @@
-import { Link, useParams } from 'react-router-dom'
+import { Link, useLocation, useParams } from 'react-router-dom'
 import { ApiError, useMentor } from '../api'
 import { Badge } from '../components/Badge'
 import { MentorDetailSkeleton } from '../components/Skeleton'
 import { StateMessage } from '../components/StateMessage'
+import { backTarget } from '../lib/backlink'
 import { formatThesisType, pluralRadovi } from '../lib/format'
 
 export function MentorPage() {
@@ -10,15 +11,20 @@ export function MentorPage() {
   const numericId = id ? Number(id) : undefined
   const { data, isPending, isError, error } = useMentor(numericId)
 
+  // Return to the search/list we came from, filters intact; the recommender is
+  // the fallback for profiles opened directly (shared link, new tab).
+  const backTo = backTarget(useLocation().state) ?? '/'
+  const backLabel = backTo.startsWith('/mentori') ? 'Natrag na popis mentora' : 'Natrag na pretragu'
+
   const notFound = isError && error instanceof ApiError && error.status === 404
 
   return (
     <div className="space-y-8">
       <Link
-        to="/"
+        to={backTo}
         className="inline-flex items-center gap-1.5 font-mono text-xs uppercase tracking-[0.12em] text-muted transition-colors hover:text-brand"
       >
-        ← Natrag na pretragu
+        ← {backLabel}
       </Link>
 
       {isPending && (

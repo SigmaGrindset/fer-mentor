@@ -1,11 +1,13 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import type { MentorRecommendation } from '../api'
+import { backState } from '../lib/backlink'
 import { formatSimilarity, formatThesisType, pluralRadovi } from '../lib/format'
 import { ScoreMeter } from './ScoreMeter'
 
 export function MentorCard({ mentor, rank }: { mentor: MentorRecommendation; rank: number }) {
   const [open, setOpen] = useState(false)
+  const back = backState(useLocation())
   const top = rank === 1
 
   return (
@@ -25,6 +27,7 @@ export function MentorCard({ mentor, rank }: { mentor: MentorRecommendation; ran
             <div className="min-w-0">
               <Link
                 to={`/mentor/${mentor.mentor_id}`}
+                state={back}
                 className="font-serif text-xl font-semibold tracking-tightish text-ink decoration-brand-200 underline-offset-4 hover:text-brand hover:underline"
               >
                 {mentor.full_name}
@@ -141,6 +144,7 @@ export function MentorCard({ mentor, rank }: { mentor: MentorRecommendation; ran
           <div className="mt-5">
             <Link
               to={`/mentor/${mentor.mentor_id}`}
+              state={back}
               className="text-sm font-medium text-brand decoration-brand-200 underline-offset-4 hover:text-brand-dark hover:underline"
             >
               Pogledaj profil mentora →

@@ -1,15 +1,17 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link, useLocation, useSearchParams } from 'react-router-dom'
 import { useMentorListInfinite } from '../api'
 import { Badge } from '../components/Badge'
 import { MentorListSkeleton } from '../components/Skeleton'
 import { StateMessage } from '../components/StateMessage'
 import { ZavodSelect } from '../components/ZavodSelect'
+import { backState } from '../lib/backlink'
 import { pluralRadovi } from '../lib/format'
 
 export function MentorListPage() {
   // Filters live in the URL so results are shareable/bookmarkable.
   const [params, setParams] = useSearchParams()
+  const back = backState(useLocation())
   const zavod = params.get('zavod') ?? ''
   const urlQ = params.get('q') ?? ''
   // Local mirror for the text input; debounced into the URL below.
@@ -150,6 +152,7 @@ export function MentorListPage() {
               <li key={m.id}>
                 <Link
                   to={`/mentor/${m.id}`}
+                  state={back}
                   className="flex h-full flex-col justify-between rounded border border-hairline bg-surface p-4 transition-colors hover:border-brand hover:bg-section"
                 >
                   <span className="font-serif text-lg font-semibold tracking-tightish text-ink">
