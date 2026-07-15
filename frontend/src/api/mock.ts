@@ -128,7 +128,7 @@ function buildExplanation(
     matchedFields.length > 0
       ? `iz područja ${matchedFields.slice(0, 2).join(' i ')}`
       : 'iz srodnih područja'
-  return `${mentor.full_name} mentorira ${n} ${radWord} ${fieldText} koji se podudaraju s vašom temom.`
+  return `${mentor.full_name} mentorira ${n} ${radWord} ${fieldText} koji se podudaraju s tvojom temom.`
 }
 
 function toEvidence(t: MockThesis, similarity: number): EvidenceThesis {

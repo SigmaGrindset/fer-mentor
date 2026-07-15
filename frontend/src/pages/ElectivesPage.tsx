@@ -290,7 +290,7 @@ export function ElectivesPage() {
             description={
               recommend.error instanceof Error
                 ? recommend.error.message
-                : 'Pokušajte ponovno za nekoliko trenutaka.'
+                : 'Pokušaj ponovno za nekoliko trenutaka.'
             }
           />
         )}
@@ -298,7 +298,7 @@ export function ElectivesPage() {
         {recommend.isSuccess && results.length === 0 && (
           <StateMessage
             title="Nema pronađenih izbornih predmeta"
-            description="Za odabrani studij/semestar nema izbornih predmeta ili pokušajte preformulirati interes."
+            description="Za odabrani studij/semestar nema izbornih predmeta ili pokušaj preformulirati interes."
           />
         )}
 
@@ -326,7 +326,7 @@ export function ElectivesPage() {
         {recommend.isIdle && (
           <StateMessage
             title="Spremni za pretragu"
-            description="Odaberite studij i opišite interes iznad, pa pritisnite „Pronađi izborne“."
+            description="Odaberi studij i opiši interes iznad, pa pritisni „Pronađi izborne“."
           />
         )}
       </section>

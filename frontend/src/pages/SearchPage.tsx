@@ -95,7 +95,7 @@ export function SearchPage() {
             description={
               recommend.error instanceof Error
                 ? recommend.error.message
-                : 'Pokušajte ponovno za nekoliko trenutaka.'
+                : 'Pokušaj ponovno za nekoliko trenutaka.'
             }
           >
             <button
@@ -111,7 +111,7 @@ export function SearchPage() {
         {recommend.isSuccess && results.length === 0 && (
           <StateMessage
             title="Nema pronađenih mentora"
-            description="Pokušajte preformulirati temu ili koristiti općenitije pojmove (npr. „računalni vid“, „web aplikacije“)."
+            description="Pokušaj preformulirati temu ili koristiti općenitije pojmove (npr. „računalni vid“, „web aplikacije“)."
           />
         )}
 
@@ -137,7 +137,7 @@ export function SearchPage() {
         {recommend.isIdle && (
           <StateMessage
             title="Spremni za pretragu"
-            description="Unesite opis teme iznad i pritisnite „Pronađi mentore“."
+            description="Unesi opis teme iznad i pritisni „Pronađi mentore“."
           />
         )}
       </section>

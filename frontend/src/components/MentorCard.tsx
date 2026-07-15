@@ -130,7 +130,7 @@ export function MentorCard({ mentor, rank }: { mentor: MentorRecommendation; ran
                       </div>
                       <span
                         className="shrink-0 font-mono text-xs font-medium text-brand-dark tnum"
-                        title="Sličnost rada s vašim opisom teme"
+                        title="Sličnost rada s tvojim opisom teme"
                       >
                         {formatSimilarity(ev.similarity)}
                       </span>
