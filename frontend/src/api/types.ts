@@ -72,6 +72,11 @@ export interface MentorSummary {
   n_theses: number
 }
 
+/** A mentor whose thesis corpus is similar (centroid cosine, 0..1). */
+export interface SimilarMentor extends MentorSummary {
+  similarity: number
+}
+
 export interface MentorListResponse {
   total: number
   mentors: MentorSummary[]

@@ -70,6 +70,12 @@ class MentorSummary(BaseModel):
     n_theses: int
 
 
+class SimilarMentor(MentorSummary):
+    """A mentor whose thesis corpus is close to another mentor's (centroid cosine)."""
+
+    similarity: float  # cosine similarity between thesis centroids, 0..1
+
+
 class MentorListResponse(BaseModel):
     total: int
     mentors: list[MentorSummary]

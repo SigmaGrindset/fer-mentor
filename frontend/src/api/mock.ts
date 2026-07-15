@@ -16,6 +16,7 @@ import type {
   MentorSummary,
   RecommendRequest,
   RecommendResponse,
+  SimilarMentor,
   ThesisOut,
   ZavodOut,
 } from './types'
@@ -244,6 +245,31 @@ export async function mockGetMentor(id: number): Promise<MentorDetail> {
     n_theses: m.theses.length,
     theses: m.theses.map(toThesisOut).sort((a, b) => (b.year ?? 0) - (a.year ?? 0)),
   }
+}
+
+export async function mockGetSimilarMentors(id: number, limit = 6): Promise<SimilarMentor[]> {
+  await delay(250)
+  const target = MOCK_MENTORS.find((x) => x.id === id)
+  if (!target) {
+    throw new ApiNotFound(`Mentor ${id} nije pronađen.`)
+  }
+  // Demo stand-in for the backend's centroid cosine: shared scientific fields
+  // plus keyword-token overlap, mapped into a believable similarity band.
+  const targetFields = new Set(target.scientific_fields)
+  const targetTokens = new Set(target.theses.flatMap((t) => tokenize(t.keywords.join(' '))))
+  return MOCK_MENTORS.filter((m) => m.id !== id)
+    .map((m) => {
+      const sharedFields = m.scientific_fields.filter((f) => targetFields.has(f)).length
+      const tokens = new Set(m.theses.flatMap((t) => tokenize(t.keywords.join(' '))))
+      let shared = 0
+      for (const t of tokens) if (targetTokens.has(t)) shared += 1
+      const union = tokens.size + targetTokens.size - shared || 1
+      const overlap = sharedFields * 0.3 + (shared / union) * 0.7
+      return { m, similarity: Number(Math.min(0.9, 0.5 + overlap * 0.4).toFixed(4)) }
+    })
+    .sort((a, b) => b.similarity - a.similarity)
+    .slice(0, limit)
+    .map(({ m, similarity }) => ({ ...toSummary(m), similarity }))
 }
 
 /**

@@ -25,11 +25,13 @@ from core.schemas import (
     ProgrammeOut,
     RecommendRequest,
     RecommendResponse,
+    SimilarMentor,
     ThesisOut,
     ZavodOut,
 )
 from recommender.recommend import recommend
 from recommender.recommend_courses import recommend_courses
+from recommender.similar import similar_mentors
 
 from .deps import get_db
 from .name_search import rank_mentors
@@ -188,6 +190,18 @@ def get_mentor(mentor_id: int, db: Session = Depends(get_db)) -> MentorDetail:
             for t in theses
         ],
     )
+
+
+@router.get("/mentors/{mentor_id}/similar", response_model=list[SimilarMentor])
+def get_similar_mentors(
+    mentor_id: int,
+    db: Session = Depends(get_db),
+    limit: int = Query(6, ge=1, le=20),
+) -> list[SimilarMentor]:
+    """Mentors with the most similar thesis corpora ("Studenti su također gledali")."""
+    if db.get(Mentor, mentor_id) is None:
+        raise HTTPException(status_code=404, detail="Mentor nije pronađen")
+    return similar_mentors(db, mentor_id, top_k=limit)
 
 
 # --------------------------------------------------------------------------- #

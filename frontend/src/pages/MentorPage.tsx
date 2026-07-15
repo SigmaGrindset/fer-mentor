@@ -3,6 +3,7 @@ import { ApiError, useMentor } from '../api'
 import { ActivityTimeline } from '../components/ActivityTimeline'
 import { Badge } from '../components/Badge'
 import { MentorDetailSkeleton } from '../components/Skeleton'
+import { SimilarMentors } from '../components/SimilarMentors'
 import { LoadingStatus, StateMessage } from '../components/StateMessage'
 import { useDocumentTitle } from '../hooks/useDocumentTitle'
 import { useSlowRequest } from '../hooks/useSlowRequest'
@@ -150,6 +151,8 @@ export function MentorPage() {
               </ul>
             )}
           </section>
+
+          <SimilarMentors mentorId={data.id} />
         </>
       )}
     </div>

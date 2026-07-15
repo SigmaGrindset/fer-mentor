@@ -1,14 +1,14 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useLocation, useSearchParams } from 'react-router-dom'
+import { useLocation, useSearchParams } from 'react-router-dom'
 import { useMentorListInfinite } from '../api'
-import { Badge } from '../components/Badge'
+import { MentorTile } from '../components/MentorTile'
 import { MentorListSkeleton } from '../components/Skeleton'
 import { LoadingStatus, StateMessage } from '../components/StateMessage'
 import { ZavodSelect } from '../components/ZavodSelect'
 import { useDocumentTitle } from '../hooks/useDocumentTitle'
 import { useSlowRequest } from '../hooks/useSlowRequest'
 import { backState } from '../lib/backlink'
-import { pluralMentori, pluralRadovi } from '../lib/format'
+import { pluralMentori } from '../lib/format'
 
 /** '' is the server default: most theses first (best match while searching). */
 const SORT_OPTIONS = [
@@ -184,19 +184,7 @@ export function MentorListPage() {
           <ul className="grid gap-3 sm:grid-cols-2">
             {mentors.map((m) => (
               <li key={m.id}>
-                <Link
-                  to={`/mentor/${m.id}`}
-                  state={back}
-                  className="flex h-full flex-col justify-between rounded border border-hairline bg-surface p-4 transition-colors hover:border-brand hover:bg-section"
-                >
-                  <span className="font-serif text-lg font-semibold tracking-tightish text-ink">
-                    {m.full_name}
-                  </span>
-                  <span className="mt-2 flex items-center gap-2">
-                    {m.zavod_code && <Badge variant="zavod">{m.zavod_code}</Badge>}
-                    <span className="text-xs text-muted">{pluralRadovi(m.n_theses)}</span>
-                  </span>
-                </Link>
+                <MentorTile mentor={m} state={back} />
               </li>
             ))}
           </ul>

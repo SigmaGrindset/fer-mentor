@@ -3,6 +3,7 @@ import { useInfiniteQuery, useMutation, useQuery } from '@tanstack/react-query'
 import {
   getMentor,
   getProgrammes,
+  getSimilarMentors,
   listMentors,
   listZavodi,
   recommend,
@@ -25,6 +26,16 @@ export function useMentor(id: number | undefined) {
     queryKey: ['mentor', id],
     queryFn: () => getMentor(id as number),
     enabled: typeof id === 'number' && !Number.isNaN(id),
+  })
+}
+
+/** Mentors with similar thesis topics, for the profile's "also viewed" strip. */
+export function useSimilarMentors(id: number | undefined, limit = 6) {
+  return useQuery({
+    queryKey: ['similar-mentors', id, limit],
+    queryFn: () => getSimilarMentors(id as number, limit),
+    enabled: typeof id === 'number' && !Number.isNaN(id),
+    staleTime: 1000 * 60 * 60, // static between re-ingests; backend caches too
   })
 }
 

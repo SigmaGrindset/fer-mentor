@@ -10,6 +10,7 @@
 import {
   ApiNotFound,
   mockGetMentor,
+  mockGetSimilarMentors,
   mockHealth,
   mockListMentors,
   mockListZavodi,
@@ -26,6 +27,7 @@ import type {
   ProgrammeCatalog,
   RecommendRequest,
   RecommendResponse,
+  SimilarMentor,
   ZavodOut,
 } from './types'
 
@@ -78,6 +80,18 @@ export async function getMentor(id: number): Promise<MentorDetail> {
     }
   }
   return request<MentorDetail>(`/api/mentors/${id}`)
+}
+
+export async function getSimilarMentors(id: number, limit = 6): Promise<SimilarMentor[]> {
+  if (!USING_REAL_API) {
+    try {
+      return await mockGetSimilarMentors(id, limit)
+    } catch (e) {
+      if (e instanceof ApiNotFound) throw new ApiError(e.message, 404)
+      throw e
+    }
+  }
+  return request<SimilarMentor[]>(`/api/mentors/${id}/similar?limit=${limit}`)
 }
 
 export async function listMentors(params: {
