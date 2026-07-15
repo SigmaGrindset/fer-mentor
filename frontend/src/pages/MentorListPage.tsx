@@ -7,7 +7,7 @@ import { StateMessage } from '../components/StateMessage'
 import { ZavodSelect } from '../components/ZavodSelect'
 import { useDocumentTitle } from '../hooks/useDocumentTitle'
 import { backState } from '../lib/backlink'
-import { pluralRadovi } from '../lib/format'
+import { pluralMentori, pluralRadovi } from '../lib/format'
 
 export function MentorListPage() {
   useDocumentTitle('Mentori')
@@ -115,7 +115,7 @@ export function MentorListPage() {
           {filtered ? 'Rezultati' : 'Svi mentori'}
         </h2>
         <p className="font-mono text-xs uppercase tracking-[0.14em] text-muted">
-          {isPending ? 'Učitavanje…' : `${total} ${total === 1 ? 'mentor' : 'mentora'}`}
+          {isPending ? 'Učitavanje…' : pluralMentori(total)}
         </p>
       </div>
 

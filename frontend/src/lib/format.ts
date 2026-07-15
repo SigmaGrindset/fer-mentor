@@ -10,23 +10,26 @@ export function formatThesisType(type?: string | null): string | null {
   return type.charAt(0).toUpperCase() + type.slice(1)
 }
 
-/** "3 rada" / "1 rad" / "5 radova" — Croatian plural for theses count. */
-export function pluralRadovi(n: number): string {
+/**
+ * Croatian numeral agreement: 1/21/101 take `one`, 2-4/22-24 take `few`,
+ * everything else (incl. 11-14) takes `many`.
+ */
+function plural(n: number, one: string, few: string, many: string): string {
   const mod10 = n % 10
   const mod100 = n % 100
-  if (mod10 === 1 && mod100 !== 11) return `${n} rad`
-  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return `${n} rada`
-  return `${n} radova`
+  if (mod10 === 1 && mod100 !== 11) return `${n} ${one}`
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return `${n} ${few}`
+  return `${n} ${many}`
 }
 
-/** "1 rezultat" / "3 rezultata" / "5 rezultata" — Croatian plural for results count. */
-export function pluralRezultati(n: number): string {
-  const mod10 = n % 10
-  const mod100 = n % 100
-  // Paukal (2-4) and genitive plural (5+) are both "rezultata".
-  if (mod10 === 1 && mod100 !== 11) return `${n} rezultat`
-  return `${n} rezultata`
-}
+/** "1 rad" / "3 rada" / "5 radova" */
+export const pluralRadovi = (n: number) => plural(n, 'rad', 'rada', 'radova')
+
+/** "1 rezultat" / "3 rezultata" / "5 rezultata" */
+export const pluralRezultati = (n: number) => plural(n, 'rezultat', 'rezultata', 'rezultata')
+
+/** "1 mentor" / "3 mentora" / "5 mentora" */
+export const pluralMentori = (n: number) => plural(n, 'mentor', 'mentora', 'mentora')
 
 export function formatSimilarity(sim: number): string {
   return `${Math.round(sim * 100)}%`
