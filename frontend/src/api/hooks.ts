@@ -8,7 +8,7 @@ import {
   recommend,
   recommendCourses,
 } from './client'
-import type { CourseRecommendRequest, RecommendRequest } from './types'
+import type { CourseRecommendRequest, MentorSort, RecommendRequest } from './types'
 
 /** How many mentors to fetch per page in the browse list. */
 export const MENTOR_PAGE_SIZE = 24
@@ -29,18 +29,19 @@ export function useMentor(id: number | undefined) {
 }
 
 /**
- * Paginated, filterable mentor browse list. Search (`q`) and `zavod` run
- * server-side so they apply across all mentors, not just the loaded page.
+ * Paginated, filterable mentor browse list. Search (`q`), `zavod` and `sort` all
+ * run server-side so they apply across all mentors, not just the loaded page.
  */
 export function useMentorListInfinite(
-  filters: { zavod?: string | null; q?: string | null } = {},
+  filters: { zavod?: string | null; q?: string | null; sort?: MentorSort | null } = {},
 ) {
   const zavod = filters.zavod ?? null
   const q = filters.q ?? null
+  const sort = filters.sort ?? null
   return useInfiniteQuery({
-    queryKey: ['mentors', zavod, q],
+    queryKey: ['mentors', zavod, q, sort],
     queryFn: ({ pageParam }) =>
-      listMentors({ zavod, q, limit: MENTOR_PAGE_SIZE, offset: pageParam }),
+      listMentors({ zavod, q, sort, limit: MENTOR_PAGE_SIZE, offset: pageParam }),
     initialPageParam: 0,
     getNextPageParam: (lastPage, allPages) => {
       const loaded = allPages.reduce((n, p) => n + p.mentors.length, 0)

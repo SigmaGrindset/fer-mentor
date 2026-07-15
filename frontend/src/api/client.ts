@@ -22,6 +22,7 @@ import type {
   HealthResponse,
   MentorDetail,
   MentorListResponse,
+  MentorSort,
   ProgrammeCatalog,
   RecommendRequest,
   RecommendResponse,
@@ -83,6 +84,7 @@ export async function listMentors(params: {
   zavod?: string | null
   field?: string | null
   q?: string | null
+  sort?: MentorSort | null
   limit?: number
   offset?: number
 } = {}): Promise<MentorListResponse> {
@@ -91,6 +93,7 @@ export async function listMentors(params: {
   if (params.zavod) qs.set('zavod', params.zavod)
   if (params.field) qs.set('field', params.field)
   if (params.q) qs.set('q', params.q)
+  if (params.sort) qs.set('sort', params.sort)
   if (params.limit != null) qs.set('limit', String(params.limit))
   if (params.offset != null) qs.set('offset', String(params.offset))
   const suffix = qs.toString() ? `?${qs.toString()}` : ''

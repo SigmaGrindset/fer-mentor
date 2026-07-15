@@ -12,6 +12,7 @@ import type {
   MentorDetail,
   MentorListResponse,
   MentorRecommendation,
+  MentorSort,
   MentorSummary,
   RecommendRequest,
   RecommendResponse,
@@ -245,10 +246,20 @@ export async function mockGetMentor(id: number): Promise<MentorDetail> {
   }
 }
 
+/**
+ * Sort key matching the backend's surname-first ordering. Mock names read
+ * "Ime Prezime", so move the first token to the back.
+ */
+function surnameKey(fullName: string): string {
+  const [ime, ...prezime] = fullName.trim().split(/\s+/)
+  return prezime.length ? `${prezime.join(' ')} ${ime}` : fullName
+}
+
 export async function mockListMentors(params: {
   zavod?: string | null
   field?: string | null
   q?: string | null
+  sort?: MentorSort | null
   limit?: number
   offset?: number
 }): Promise<MentorListResponse> {
@@ -275,9 +286,11 @@ export async function mockListMentors(params: {
     const f = params.field.toLowerCase()
     mentors = mentors.filter((m) => m.scientific_fields.some((sf) => sf.toLowerCase().includes(f)))
   }
+  const byName = (a: MentorSummary, b: MentorSummary) =>
+    surnameKey(a.full_name).localeCompare(surnameKey(b.full_name), 'hr')
   const summaries: MentorSummary[] = mentors
     .map(toSummary)
-    .sort((a, b) => b.n_theses - a.n_theses || a.full_name.localeCompare(b.full_name, 'hr'))
+    .sort(params.sort === 'name' ? byName : (a, b) => b.n_theses - a.n_theses || byName(a, b))
   const total = summaries.length
   const offset = params.offset ?? 0
   const limit = params.limit ?? total

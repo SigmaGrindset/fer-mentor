@@ -77,6 +77,12 @@ export interface MentorListResponse {
   mentors: MentorSummary[]
 }
 
+/**
+ * Mentor list ordering. Omitted/null means the server default: best match
+ * while searching by name, otherwise most theses first.
+ */
+export type MentorSort = 'name' | 'theses'
+
 /** A department with its mentor count, for the filter dropdown. */
 export interface ZavodOut {
   code: string

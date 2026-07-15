@@ -10,6 +10,12 @@ import { useSlowRequest } from '../hooks/useSlowRequest'
 import { backState } from '../lib/backlink'
 import { pluralMentori, pluralRadovi } from '../lib/format'
 
+/** '' is the server default: most theses first (best match while searching). */
+const SORT_OPTIONS = [
+  { value: '', label: 'Po broju radova' },
+  { value: 'name', label: 'Abecedno' },
+] as const
+
 export function MentorListPage() {
   useDocumentTitle('Mentori')
   // Filters live in the URL so results are shareable/bookmarkable.
@@ -17,6 +23,8 @@ export function MentorListPage() {
   const back = backState(useLocation())
   const zavod = params.get('zavod') ?? ''
   const urlQ = params.get('q') ?? ''
+  // Anything unrecognized falls back to the default ordering.
+  const sort = params.get('sort') === 'name' ? 'name' : null
   // Local mirror for the text input; debounced into the URL below.
   const [search, setSearch] = useState(urlQ)
 
@@ -47,7 +55,7 @@ export function MentorListPage() {
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-  } = useMentorListInfinite({ zavod: zavod || null, q: urlQ || null })
+  } = useMentorListInfinite({ zavod: zavod || null, q: urlQ || null, sort })
   const slow = useSlowRequest(isPending)
 
   const mentors = useMemo(() => data?.pages.flatMap((p) => p.mentors) ?? [], [data])
@@ -110,6 +118,30 @@ export function MentorListPage() {
           onChange={(v) => updateParam('zavod', v)}
           className="w-full sm:w-52"
         />
+        <div
+          role="group"
+          aria-label="Sortiraj mentore"
+          className="flex shrink-0 rounded border border-line bg-surface p-0.5"
+        >
+          {SORT_OPTIONS.map((opt) => {
+            const active = (sort ?? '') === opt.value
+            return (
+              <button
+                key={opt.value || 'default'}
+                type="button"
+                onClick={() => updateParam('sort', opt.value)}
+                aria-pressed={active}
+                className={`flex-1 whitespace-nowrap rounded px-3 py-2 text-xs font-semibold transition-colors sm:flex-none ${
+                  active
+                    ? 'bg-brand text-white'
+                    : 'text-muted hover:text-ink'
+                }`}
+              >
+                {opt.label}
+              </button>
+            )
+          })}
+        </div>
       </div>
 
       <div className="flex items-baseline justify-between border-b border-hairline pb-3">

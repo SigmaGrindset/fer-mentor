@@ -5,6 +5,8 @@ Response models come from `core.schemas`; the recommender returns
 """
 from __future__ import annotations
 
+from typing import Literal
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import distinct, func, select
 from sqlalchemy.orm import Session
@@ -45,6 +47,25 @@ def _n_theses(m: Mentor) -> int:
     return m.n_theses_repo + m.n_theses_current
 
 
+# The database collates with C.UTF-8, i.e. raw byte order, which would strand
+# every č/ć/š/ž/đ surname after Z ("Šegvić" past "Zorić"). ICU's Croatian
+# collation puts them in their real alphabet slots.
+_HR_COLLATION = "hr-HR-x-icu"
+
+
+def _mentor_order(sort: str | None):
+    """ORDER BY terms for the mentor list; `id` keeps offset paging stable."""
+    by_name = (
+        Mentor.prezime.collate(_HR_COLLATION),
+        Mentor.ime.collate(_HR_COLLATION),
+        Mentor.id,
+    )
+    if sort == "name":
+        return by_name
+    # Most-active first, alphabetical within an equal thesis count.
+    return ((Mentor.n_theses_repo + Mentor.n_theses_current).desc(), *by_name)
+
+
 @router.get("/health", response_model=HealthResponse)
 def health() -> HealthResponse:
     return HealthResponse()
@@ -74,6 +95,13 @@ def list_mentors(
     zavod: str | None = Query(None),
     field: str | None = Query(None),
     q: str | None = Query(None),
+    sort: Literal["name", "theses"] | None = Query(
+        None,
+        description=(
+            "'name' = Croatian alphabetical by surname, 'theses' = most theses "
+            "first. Omit for the default: best match when `q` is set, else 'theses'."
+        ),
+    ),
     limit: int = Query(50, ge=1, le=200),
     offset: int = Query(0, ge=0),
 ) -> MentorListResponse:
@@ -93,15 +121,24 @@ def list_mentors(
         candidates = db.scalars(select(Mentor).where(*filters)).all()
         ranked = rank_mentors(list(candidates), q)
         total = len(ranked)
-        page = ranked[offset : offset + limit]
+        if sort is None:
+            page = ranked[offset : offset + limit]
+        else:
+            # An explicit sort overrides match order. Re-order the matches in the
+            # DB rather than in Python so both branches collate identically.
+            page = db.scalars(
+                select(Mentor)
+                .where(Mentor.id.in_([m.id for m in ranked]))
+                .order_by(*_mentor_order(sort))
+                .limit(limit)
+                .offset(offset)
+            ).all()
     else:
         total = db.scalar(select(func.count(distinct(Mentor.id))).where(*filters)) or 0
-        # Most-active mentors first; full_name as a stable tie-break for paging.
-        order_expr = (Mentor.n_theses_repo + Mentor.n_theses_current).desc()
         page = db.scalars(
             select(Mentor)
             .where(*filters)
-            .order_by(order_expr, Mentor.full_name)
+            .order_by(*_mentor_order(sort))
             .limit(limit)
             .offset(offset)
         ).all()
