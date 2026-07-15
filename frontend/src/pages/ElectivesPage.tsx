@@ -68,6 +68,15 @@ export function ElectivesPage() {
     }
   }, [inLevel, programmeCode])
 
+  function search(q: string) {
+    recommend.mutate({
+      query: q,
+      programme_code: programmeCode,
+      semester: semester === '' ? null : Number(semester),
+      top_k: 12,
+    })
+  }
+
   // Auto-run once from a shared/bookmarked URL (?q=&smjer=…), after the
   // catalogue has loaded and a valid programme is resolved. Ref-guarded so it
   // fires a single time (StrictMode-safe).
@@ -78,12 +87,7 @@ export function ElectivesPage() {
     autoRan.current = true
     setSubmittedQuery(q)
     add(q)
-    recommend.mutate({
-      query: q,
-      programme_code: programmeCode,
-      semester: semester === '' ? null : Number(semester),
-      top_k: 12,
-    })
+    search(q)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [programmeCode, inLevel])
 
@@ -127,12 +131,7 @@ export function ElectivesPage() {
     if (semester) next.set('sem', semester)
     next.set('q', q)
     setParams(next, { replace: true })
-    recommend.mutate({
-      query: q,
-      programme_code: programmeCode,
-      semester: semester === '' ? null : Number(semester),
-      top_k: 12,
-    })
+    search(q)
   }
 
   function submit(e: React.FormEvent) {
@@ -293,7 +292,15 @@ export function ElectivesPage() {
                 ? recommend.error.message
                 : 'Pokušaj ponovno za nekoliko trenutaka.'
             }
-          />
+          >
+            <button
+              type="button"
+              onClick={() => submittedQuery && search(submittedQuery)}
+              className="rounded bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700"
+            >
+              Pokušaj ponovno
+            </button>
+          </StateMessage>
         )}
 
         {recommend.isSuccess && results.length === 0 && (
