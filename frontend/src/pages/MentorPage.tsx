@@ -3,6 +3,7 @@ import { ApiError, useMentor } from '../api'
 import { Badge } from '../components/Badge'
 import { MentorDetailSkeleton } from '../components/Skeleton'
 import { StateMessage } from '../components/StateMessage'
+import { useDocumentTitle } from '../hooks/useDocumentTitle'
 import { backTarget } from '../lib/backlink'
 import { formatThesisType, pluralRadovi } from '../lib/format'
 
@@ -17,6 +18,9 @@ export function MentorPage() {
   const backLabel = backTo.startsWith('/mentori') ? 'Natrag na popis mentora' : 'Natrag na pretragu'
 
   const notFound = isError && error instanceof ApiError && error.status === 404
+
+  // The name arrives with the fetch, so the title settles a beat after navigation.
+  useDocumentTitle(data?.full_name ?? (notFound ? 'Mentor nije pronađen' : 'Profil mentora'))
 
   return (
     <div className="space-y-8">

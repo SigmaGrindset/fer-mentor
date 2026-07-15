@@ -1,7 +1,9 @@
 import { Link } from 'react-router-dom'
 import { StateMessage } from '../components/StateMessage'
+import { useDocumentTitle } from '../hooks/useDocumentTitle'
 
 export function NotFoundPage() {
+  useDocumentTitle('Stranica nije pronađena')
   return (
     <StateMessage title="Stranica nije pronađena" description="Tražena stranica ne postoji.">
       <Link

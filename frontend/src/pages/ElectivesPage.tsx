@@ -7,6 +7,7 @@ import { RecentSearches } from '../components/RecentSearches'
 import { Select, type SelectGroup, type SelectOption } from '../components/Select'
 import { ResultListSkeleton } from '../components/Skeleton'
 import { StateMessage } from '../components/StateMessage'
+import { useDocumentTitle } from '../hooks/useDocumentTitle'
 import { RECENT_ELECTIVES, useRecentSearches } from '../hooks/useRecentSearches'
 
 type Level = 'preddiplomski' | 'diplomski'
@@ -25,6 +26,7 @@ const EXAMPLES = [
 ]
 
 export function ElectivesPage() {
+  useDocumentTitle('Izborni predmeti')
   const { data: catalog, isPending: loadingProgrammes } = useProgrammes()
   const recommend = useCourseRecommend()
   const { recent, add, remove } = useRecentSearches(RECENT_ELECTIVES)

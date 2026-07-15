@@ -5,10 +5,12 @@ import { Badge } from '../components/Badge'
 import { MentorListSkeleton } from '../components/Skeleton'
 import { StateMessage } from '../components/StateMessage'
 import { ZavodSelect } from '../components/ZavodSelect'
+import { useDocumentTitle } from '../hooks/useDocumentTitle'
 import { backState } from '../lib/backlink'
 import { pluralRadovi } from '../lib/format'
 
 export function MentorListPage() {
+  useDocumentTitle('Mentori')
   // Filters live in the URL so results are shareable/bookmarkable.
   const [params, setParams] = useSearchParams()
   const back = backState(useLocation())

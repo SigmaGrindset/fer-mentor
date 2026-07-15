@@ -6,9 +6,11 @@ import { RecentSearches } from '../components/RecentSearches'
 import { SearchForm, type SearchValues } from '../components/SearchForm'
 import { ResultListSkeleton } from '../components/Skeleton'
 import { StateMessage } from '../components/StateMessage'
+import { useDocumentTitle } from '../hooks/useDocumentTitle'
 import { RECENT_MENTORS, useRecentSearches } from '../hooks/useRecentSearches'
 
 export function SearchPage() {
+  useDocumentTitle()
   const recommend = useRecommend()
   const { recent, add, remove } = useRecentSearches(RECENT_MENTORS)
   const [params, setParams] = useSearchParams()
