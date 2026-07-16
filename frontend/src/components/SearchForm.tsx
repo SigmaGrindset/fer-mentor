@@ -48,7 +48,7 @@ export function SearchForm({
   return (
     <form
       onSubmit={submit}
-      className="rounded border border-hairline bg-surface p-6 shadow-[0_1px_0_rgba(22,32,30,0.04)] sm:p-7"
+      className="rounded border border-hairline bg-surface p-5 shadow-[0_1px_0_rgba(22,32,30,0.04)] sm:p-7"
     >
       <label
         htmlFor="topic"
@@ -69,15 +69,15 @@ export function SearchForm({
       />
 
       <div className="mt-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
-          <div className="flex items-center gap-2">
+        <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-4 sm:gap-y-3">
+          <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-2">
             <label htmlFor="zavod" className="text-sm text-muted">
               Zavod
             </label>
-            <ZavodSelect value={zavod} onChange={setZavod} />
+            <ZavodSelect value={zavod} onChange={setZavod} className="w-full sm:w-52" />
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-2">
             <span className="text-sm text-muted">Vrsta rada</span>
             <div
               role="group"
@@ -92,7 +92,7 @@ export function SearchForm({
                     type="button"
                     onClick={() => setThesisType(opt.value)}
                     aria-pressed={active}
-                    className={`whitespace-nowrap rounded px-3 py-2 text-xs font-semibold transition-colors ${
+                    className={`flex-1 whitespace-nowrap rounded px-3 py-2 text-xs font-semibold transition-colors sm:flex-none ${
                       active ? 'bg-brand text-white' : 'text-muted hover:text-ink'
                     }`}
                   >

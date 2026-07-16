@@ -15,7 +15,7 @@ export function CourseCard({ course, rank }: { course: CourseRecommendation; ran
 
   return (
     <article className="rounded border border-hairline bg-surface shadow-[0_1px_0_rgba(22,32,30,0.04)] transition-colors hover:border-brand-300">
-      <div className="flex gap-5 p-6">
+      <div className="flex gap-5 p-5 sm:p-6">
         {/* Editorial rank numeral */}
         <div
           className={`hidden shrink-0 select-none pt-0.5 font-serif text-3xl font-semibold leading-none tnum sm:block ${

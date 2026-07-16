@@ -19,12 +19,12 @@ export function RecentSearches({
         {items.map((q) => (
           <span
             key={q}
-            className="inline-flex items-center gap-1.5 rounded-full border border-hairline bg-section py-1 pl-3 pr-1.5 text-sm text-ink"
+            className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-hairline bg-section py-1 pl-3 pr-1.5 text-sm text-ink"
           >
             <button
               type="button"
               onClick={() => onPick(q)}
-              className="max-w-[16rem] truncate text-left transition-colors hover:text-brand"
+              className="min-w-0 max-w-[16rem] truncate text-left transition-colors hover:text-brand"
               title={q}
             >
               {q}

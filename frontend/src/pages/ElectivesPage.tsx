@@ -166,7 +166,7 @@ export function ElectivesPage() {
 
       <form
         onSubmit={submit}
-        className="rounded border border-hairline bg-surface p-6 shadow-[0_1px_0_rgba(22,32,30,0.04)] sm:p-7"
+        className="rounded border border-hairline bg-surface p-5 shadow-[0_1px_0_rgba(22,32,30,0.04)] sm:p-7"
       >
         {/* Razina — segmented control */}
         <span className="font-mono text-[0.7rem] uppercase tracking-[0.16em] text-muted">
@@ -189,7 +189,7 @@ export function ElectivesPage() {
 
         {/* Smjer / profil + semestar */}
         <div className="mt-5 grid gap-4 sm:grid-cols-2">
-          <div className="flex flex-col gap-1.5">
+          <div className="flex min-w-0 flex-col gap-1.5">
             <label htmlFor="programme" className="text-sm text-muted">
               {level === 'preddiplomski' ? 'Smjer' : 'Profil diplomskog studija'}
             </label>
@@ -207,7 +207,7 @@ export function ElectivesPage() {
             />
           </div>
 
-          <div className="flex flex-col gap-1.5">
+          <div className="flex min-w-0 flex-col gap-1.5">
             <label htmlFor="semester" className="text-sm text-muted">
               Semestar <span className="text-muted/60">(neobavezno)</span>
             </label>
@@ -312,9 +312,9 @@ export function ElectivesPage() {
 
         {recommend.isSuccess && results.length > 0 && (
           <div>
-            <div className="flex items-baseline justify-between border-b border-hairline pb-3">
+            <div className="flex items-baseline justify-between gap-4 border-b border-hairline pb-3">
               <h2 className="font-serif text-xl font-semibold text-ink">Predloženi izborni predmeti</h2>
-              <p className="font-mono text-xs uppercase tracking-[0.14em] text-muted">
+              <p className="shrink-0 whitespace-nowrap font-mono text-xs uppercase tracking-[0.14em] text-muted">
                 {pluralRezultati(results.length)}
               </p>
             </div>

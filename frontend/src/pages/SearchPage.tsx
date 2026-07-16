@@ -153,9 +153,9 @@ export function SearchPage() {
 
         {recommend.isSuccess && results.length > 0 && (
           <div>
-            <div className="flex items-baseline justify-between border-b border-hairline pb-3">
+            <div className="flex items-baseline justify-between gap-4 border-b border-hairline pb-3">
               <h2 className="font-serif text-xl font-semibold text-ink">Predloženi mentori</h2>
-              <p className="font-mono text-xs uppercase tracking-[0.14em] text-muted">
+              <p className="shrink-0 whitespace-nowrap font-mono text-xs uppercase tracking-[0.14em] text-muted">
                 {pluralRezultati(results.length)}
               </p>
             </div>

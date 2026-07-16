@@ -5,7 +5,7 @@ import { useSaved } from '../hooks/useSaved'
 import { useTheme } from '../hooks/useTheme'
 
 function navClass({ isActive }: { isActive: boolean }) {
-  return `relative py-1 text-[0.8rem] font-semibold uppercase tracking-[0.12em] transition-colors ${
+  return `relative whitespace-nowrap py-1 text-[0.8rem] font-semibold uppercase tracking-[0.12em] transition-colors ${
     isActive
       ? 'text-ink after:absolute after:-bottom-[3px] after:left-0 after:h-[2px] after:w-full after:bg-brand'
       : 'text-muted hover:text-ink'
@@ -56,8 +56,11 @@ export function Layout({ children }: { children: ReactNode }) {
     <div className="flex min-h-screen flex-col">
       {/* Deep-teal utility bar — FER heritage, modernized */}
       <div className="bg-brand-deep text-brand-100">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-5 py-1.5 text-[0.7rem] uppercase tracking-[0.14em]">
-          <span className="text-brand-200">Sveučilište u Zagrebu — FER</span>
+        <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-5 py-1.5 text-[0.7rem] uppercase tracking-[0.14em]">
+          <span className="whitespace-nowrap text-brand-200">
+            <span className="hidden sm:inline">Sveučilište u Zagrebu — FER</span>
+            <span className="sm:hidden">UNIZG — FER</span>
+          </span>
           <a
             href="https://www.fer.unizg.hr"
             target="_blank"
@@ -80,7 +83,7 @@ export function Layout({ children }: { children: ReactNode }) {
               Fakultet elektrotehnike i računarstva
             </span>
           </Link>
-          <nav className="flex items-center gap-6 sm:pb-1">
+          <nav className="flex flex-wrap items-center gap-x-5 gap-y-2 sm:gap-6 sm:pb-1">
             <NavLink to="/" className={navClass} end>
               Pretraga
             </NavLink>

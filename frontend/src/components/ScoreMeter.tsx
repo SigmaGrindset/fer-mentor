@@ -22,7 +22,7 @@ export function ScoreMeter({ score, kind }: { score: number; kind: 'mentor' | 'c
       <div className="h-1 w-24 overflow-hidden rounded-full bg-section">
         <div className="h-full rounded-full bg-brand" style={{ width: `${pct}%` }} />
       </div>
-      <span className="font-mono text-[0.65rem] uppercase tracking-[0.12em] text-muted">
+      <span className="max-w-[6rem] text-right font-mono text-[0.65rem] uppercase tracking-[0.12em] text-muted sm:max-w-none">
         {label} podudaranje
       </span>
     </div>
