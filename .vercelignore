@@ -1,0 +1,15 @@
+# Only the frontend is built on Vercel (Root Directory = frontend).
+# Keep CLI uploads small: exclude backend/data/tooling trees.
+.venv/
+data/
+tmp/
+backend/
+core/
+docker/
+ingestion/
+recommender/
+scripts/
+fermentor.egg-info/
+Antoniorepo-onboardingworker/
+frontend/node_modules/
+frontend/dist/
