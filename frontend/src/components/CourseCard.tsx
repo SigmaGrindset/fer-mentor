@@ -1,10 +1,13 @@
 import { useState } from 'react'
 import type { CourseRecommendation } from '../api'
+import { useSaved } from '../hooks/useSaved'
 import { Badge } from './Badge'
+import { BookmarkButton } from './BookmarkButton'
 import { ScoreMeter } from './ScoreMeter'
 
 export function CourseCard({ course, rank }: { course: CourseRecommendation; rank: number }) {
   const [open, setOpen] = useState(false)
+  const { isCourseSaved, toggleCourse } = useSaved()
   const top = rank === 1
   const ects = course.ects != null ? `${course.ects} ECTS` : null
   const sem = course.semester != null ? `${course.semester}. semestar` : null
@@ -49,7 +52,22 @@ export function CourseCard({ course, rank }: { course: CourseRecommendation; ran
                 )}
               </div>
             </div>
-            <ScoreMeter score={course.score} kind="course" />
+            <div className="flex shrink-0 items-start gap-1.5">
+              <BookmarkButton
+                saved={isCourseSaved(course.course_id)}
+                onToggle={() =>
+                  toggleCourse({
+                    id: course.course_id,
+                    code: course.code,
+                    name: course.name,
+                    ects: course.ects,
+                    url: course.url,
+                  })
+                }
+                itemLabel={course.name}
+              />
+              <ScoreMeter score={course.score} kind="course" />
+            </div>
           </div>
 
           <p className="mt-4 max-w-prose text-[0.95rem] leading-relaxed text-ink/90">

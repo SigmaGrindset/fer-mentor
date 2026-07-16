@@ -4,6 +4,7 @@ import { ElectivesPage } from './pages/ElectivesPage'
 import { MentorListPage } from './pages/MentorListPage'
 import { MentorPage } from './pages/MentorPage'
 import { NotFoundPage } from './pages/NotFoundPage'
+import { SavedPage } from './pages/SavedPage'
 import { SearchPage } from './pages/SearchPage'
 
 export default function App() {
@@ -14,6 +15,7 @@ export default function App() {
         <Route path="/izborni" element={<ElectivesPage />} />
         <Route path="/mentor/:id" element={<MentorPage />} />
         <Route path="/mentori" element={<MentorListPage />} />
+        <Route path="/spremljeni" element={<SavedPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </Layout>

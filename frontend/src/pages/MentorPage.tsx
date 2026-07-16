@@ -6,7 +6,9 @@ import { MentorDetailSkeleton } from '../components/Skeleton'
 import { SimilarMentors } from '../components/SimilarMentors'
 import { LoadingStatus, StateMessage } from '../components/StateMessage'
 import { ThesisList } from '../components/ThesisList'
+import { BookmarkButton } from '../components/BookmarkButton'
 import { useDocumentTitle } from '../hooks/useDocumentTitle'
+import { useSaved } from '../hooks/useSaved'
 import { useSlowRequest } from '../hooks/useSlowRequest'
 import { backTarget } from '../lib/backlink'
 import { pluralRadovi } from '../lib/format'
@@ -16,6 +18,7 @@ export function MentorPage() {
   const numericId = id ? Number(id) : undefined
   const { data, isPending, isError, error } = useMentor(numericId)
   const slow = useSlowRequest(isPending)
+  const { isMentorSaved, toggleMentor } = useSaved()
 
   // Return to the search/list we came from, filters intact; the recommender is
   // the fallback for profiles opened directly (shared link, new tab).
@@ -73,9 +76,23 @@ export function MentorPage() {
                 {data.zavod_code}
               </span>
             )}
-            <h1 className="mt-2 font-serif text-3xl font-semibold tracking-tightish text-ink sm:text-4xl">
-              {data.full_name}
-            </h1>
+            <div className="mt-2 flex items-start justify-between gap-4">
+              <h1 className="font-serif text-3xl font-semibold tracking-tightish text-ink sm:text-4xl">
+                {data.full_name}
+              </h1>
+              <BookmarkButton
+                saved={isMentorSaved(data.id)}
+                onToggle={() =>
+                  toggleMentor({
+                    id: data.id,
+                    full_name: data.full_name,
+                    zavod_code: data.zavod_code,
+                    n_theses: data.n_theses,
+                  })
+                }
+                itemLabel={data.full_name}
+              />
+            </div>
             <p className="mt-2 text-sm text-muted">{pluralRadovi(data.n_theses)}</p>
 
             <ActivityTimeline theses={data.theses} />

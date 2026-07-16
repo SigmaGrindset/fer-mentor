@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { Link, NavLink } from 'react-router-dom'
 import { USING_REAL_API } from '../api'
+import { useSaved } from '../hooks/useSaved'
 import { useTheme } from '../hooks/useTheme'
 
 function navClass({ isActive }: { isActive: boolean }) {
@@ -35,6 +36,18 @@ function ThemeToggle() {
         </svg>
       )}
     </button>
+  )
+}
+
+function SavedNavLink() {
+  const { total } = useSaved()
+  return (
+    <NavLink to="/spremljeni" className={navClass}>
+      Spremljeni
+      {total > 0 && (
+        <span className="tnum ml-1 text-[0.65rem] text-brand">{total}</span>
+      )}
+    </NavLink>
   )
 }
 
@@ -77,6 +90,7 @@ export function Layout({ children }: { children: ReactNode }) {
             <NavLink to="/mentori" className={navClass}>
               Mentori
             </NavLink>
+            <SavedNavLink />
             <span className="h-4 w-px bg-line" aria-hidden="true" />
             <ThemeToggle />
           </nav>

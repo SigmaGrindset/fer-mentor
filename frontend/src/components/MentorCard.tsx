@@ -1,13 +1,16 @@
 import { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import type { MentorRecommendation } from '../api'
+import { useSaved } from '../hooks/useSaved'
 import { backState } from '../lib/backlink'
 import { formatSimilarity, formatThesisType, pluralRadovi } from '../lib/format'
+import { BookmarkButton } from './BookmarkButton'
 import { ScoreMeter } from './ScoreMeter'
 
 export function MentorCard({ mentor, rank }: { mentor: MentorRecommendation; rank: number }) {
   const [open, setOpen] = useState(false)
   const back = backState(useLocation())
+  const { isMentorSaved, toggleMentor } = useSaved()
   const top = rank === 1
 
   return (
@@ -41,7 +44,21 @@ export function MentorCard({ mentor, rank }: { mentor: MentorRecommendation; ran
                 <span className="text-xs text-muted">{pluralRadovi(mentor.n_theses)}</span>
               </div>
             </div>
-            <ScoreMeter score={mentor.score} kind="mentor" />
+            <div className="flex shrink-0 items-start gap-1.5">
+              <BookmarkButton
+                saved={isMentorSaved(mentor.mentor_id)}
+                onToggle={() =>
+                  toggleMentor({
+                    id: mentor.mentor_id,
+                    full_name: mentor.full_name,
+                    zavod_code: mentor.zavod_code,
+                    n_theses: mentor.n_theses,
+                  })
+                }
+                itemLabel={mentor.full_name}
+              />
+              <ScoreMeter score={mentor.score} kind="mentor" />
+            </div>
           </div>
 
           <p className="mt-4 max-w-prose text-[0.95rem] leading-relaxed text-ink/90">
