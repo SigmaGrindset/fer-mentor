@@ -25,6 +25,27 @@ export function SearchPage() {
   const initialThesisType = rawTip === 'zavrsni' || rawTip === 'diplomski' ? rawTip : ''
 
   const lastSearched = useRef<string | null>(null)
+  const resultsRef = useRef<HTMLElement>(null)
+
+  // On mobile the form fills the viewport, so freshly submitted searches
+  // render their skeletons/results below the fold. Once loading starts,
+  // bring the results section into view — but only when it's actually
+  // out of sight, so desktop (where it's already visible) never jumps.
+  useEffect(() => {
+    if (!recommend.isPending) return
+    const el = resultsRef.current
+    if (!el) return
+    if (el.getBoundingClientRect().top > window.innerHeight * 0.75) {
+      el.scrollIntoView({
+        // 'instant' (not 'auto') because the global CSS scroll-behavior is
+        // smooth; 'auto' would defer to it and animate anyway.
+        behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches
+          ? 'instant'
+          : 'smooth',
+        block: 'start',
+      })
+    }
+  }, [recommend.isPending])
 
   function runSearch(query: string, zavod: string, thesisType: string) {
     lastSearched.current = query
@@ -92,7 +113,7 @@ export function SearchPage() {
 
       <RecentSearches items={recent} onPick={pickRecent} onRemove={remove} />
 
-      <section aria-live="polite">
+      <section ref={resultsRef} aria-live="polite" className="scroll-mt-6">
         {recommend.isPending && (
           <>
             <LoadingStatus label="Pretražujem radove…" slow={slow} />

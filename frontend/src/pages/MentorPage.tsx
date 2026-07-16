@@ -11,6 +11,7 @@ import { useDocumentTitle } from '../hooks/useDocumentTitle'
 import { useSaved } from '../hooks/useSaved'
 import { useSlowRequest } from '../hooks/useSlowRequest'
 import { backTarget } from '../lib/backlink'
+import { ferProfileUrl } from '../lib/ferProfile'
 import { pluralRadovi } from '../lib/format'
 
 export function MentorPage() {
@@ -93,7 +94,17 @@ export function MentorPage() {
                 itemLabel={data.full_name}
               />
             </div>
-            <p className="mt-2 text-sm text-muted">{pluralRadovi(data.n_theses)}</p>
+            <div className="mt-2 flex flex-wrap items-baseline gap-x-4 gap-y-1">
+              <p className="text-sm text-muted">{pluralRadovi(data.n_theses)}</p>
+              <a
+                href={ferProfileUrl(data.full_name)}
+                target="_blank"
+                rel="noreferrer"
+                className="text-sm font-medium text-brand decoration-brand-200 underline-offset-4 hover:text-brand-dark hover:underline"
+              >
+                Profil na fer.unizg.hr ↗
+              </a>
+            </div>
 
             <ActivityTimeline theses={data.theses} />
 
