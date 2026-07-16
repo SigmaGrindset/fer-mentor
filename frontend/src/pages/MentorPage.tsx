@@ -5,10 +5,11 @@ import { Badge } from '../components/Badge'
 import { MentorDetailSkeleton } from '../components/Skeleton'
 import { SimilarMentors } from '../components/SimilarMentors'
 import { LoadingStatus, StateMessage } from '../components/StateMessage'
+import { ThesisList } from '../components/ThesisList'
 import { useDocumentTitle } from '../hooks/useDocumentTitle'
 import { useSlowRequest } from '../hooks/useSlowRequest'
 import { backTarget } from '../lib/backlink'
-import { formatThesisType, pluralRadovi } from '../lib/format'
+import { pluralRadovi } from '../lib/format'
 
 export function MentorPage() {
   const { id } = useParams<{ id: string }>()
@@ -95,64 +96,11 @@ export function MentorPage() {
             )}
           </header>
 
-          <section>
-            <h2 className="font-serif text-xl font-semibold text-ink">
-              Radovi <span className="font-sans text-base font-normal text-muted">({data.theses.length})</span>
-            </h2>
-            {data.theses.length === 0 ? (
-              <div className="mt-4">
-                <StateMessage title="Nema zabilježenih radova za ovog mentora." />
-              </div>
-            ) : (
-              <ul className="mt-4 divide-y divide-hairline border-t border-hairline">
-                {data.theses.map((thesis) => (
-                  <li key={thesis.id} className="py-4">
-                    {thesis.url ? (
-                      <a
-                        href={thesis.url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="leading-snug text-ink decoration-brand-200 underline-offset-4 hover:text-brand hover:underline"
-                      >
-                        {thesis.title}
-                      </a>
-                    ) : (
-                      <p className="leading-snug text-ink">{thesis.title}</p>
-                    )}
-                    <div className="mt-1.5 flex flex-wrap items-center gap-2 font-mono text-[0.7rem] uppercase tracking-wide text-muted">
-                      {thesis.year && <span className="tnum">{thesis.year}</span>}
-                      {formatThesisType(thesis.thesis_type) && (
-                        <>
-                          <span aria-hidden="true">·</span>
-                          <span>{formatThesisType(thesis.thesis_type)}</span>
-                        </>
-                      )}
-                      {thesis.scientific_field && (
-                        <>
-                          <span aria-hidden="true">·</span>
-                          <span className="normal-case tracking-normal">{thesis.scientific_field}</span>
-                        </>
-                      )}
-                    </div>
-                    {thesis.keywords.length > 0 && (
-                      <div className="mt-2 flex flex-wrap gap-1.5">
-                        {thesis.keywords.map((kw) => (
-                          <span
-                            key={kw}
-                            className="rounded-sm border border-hairline bg-section px-2 py-0.5 text-xs text-muted"
-                          >
-                            {kw}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
-
           <SimilarMentors mentorId={data.id} />
+
+          {/* Keyed by mentor: hopping to a similar mentor must reseed the
+              filter input from the fresh (param-less) URL, not keep old text. */}
+          <ThesisList key={data.id} theses={data.theses} />
         </>
       )}
     </div>
