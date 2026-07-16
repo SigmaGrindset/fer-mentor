@@ -121,6 +121,7 @@ def recommend(
     top_k: int = 10,
     zavod: str | None = None,
     field: str | None = None,
+    thesis_type: str | None = None,
 ) -> list[MentorRecommendation]:
     """Recommend mentors for a free-text topic query.
 
@@ -131,6 +132,9 @@ def recommend(
         zavod: optional Mentor.zavod_code filter (exact match).
         field: optional Thesis.scientific_field filter (case-insensitive
             substring) applied to candidate theses.
+        thesis_type: optional Thesis.thesis_type hard filter (exact match,
+            e.g. 'zavrsni') — non-matching theses neither score nor appear
+            as evidence, and mentors without a match drop out.
 
     Returns:
         Up to `top_k` MentorRecommendation objects, sorted by score desc.
@@ -162,6 +166,8 @@ def recommend(
     )
     if field:
         stmt = stmt.where(Thesis.scientific_field.ilike(f"%{field}%"))
+    if thesis_type:
+        stmt = stmt.where(Thesis.thesis_type == thesis_type)
     if zavod:
         stmt = stmt.join(Mentor, Mentor.id == Thesis.mentor_id).where(
             Mentor.zavod_code == zavod
@@ -210,11 +216,16 @@ def recommend(
     }
     current_topics: dict[int, list[str]] = {mid: [] for mid in mentor_ids}
     if mentor_ids:
-        for tid_mentor, title_hr, title_en in session.execute(
+        # Same type filter as the search: a završni student shouldn't be shown
+        # this year's diplomski topics (schedule theses are cleanly typed).
+        topics_stmt = (
             select(Thesis.mentor_id, Thesis.title_hr, Thesis.title_en)
             .where(Thesis.mentor_id.in_(mentor_ids))
             .where(Thesis.source == "schedule")
-        ).all():
+        )
+        if thesis_type:
+            topics_stmt = topics_stmt.where(Thesis.thesis_type == thesis_type)
+        for tid_mentor, title_hr, title_en in session.execute(topics_stmt).all():
             title = (title_hr or title_en or "").strip()
             if title:
                 current_topics[tid_mentor].append(title)

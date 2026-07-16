@@ -75,7 +75,14 @@ def health() -> HealthResponse:
 
 @router.post("/recommend", response_model=RecommendResponse)
 def post_recommend(req: RecommendRequest, db: Session = Depends(get_db)) -> RecommendResponse:
-    results = recommend(db, req.query, top_k=req.top_k, zavod=req.zavod, field=req.field)
+    results = recommend(
+        db,
+        req.query,
+        top_k=req.top_k,
+        zavod=req.zavod,
+        field=req.field,
+        thesis_type=req.thesis_type,
+    )
     return RecommendResponse(query=req.query, results=results)
 
 

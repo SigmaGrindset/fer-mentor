@@ -60,6 +60,17 @@ const STOPWORDS = new Set([
   'nešto',
 ])
 
+/**
+ * Normalize a thesis type for comparison: mock data uses 'završni' (diacritic)
+ * while the API contract uses ASCII 'zavrsni'.
+ */
+function normalizeType(s?: string | null): string {
+  return (s ?? '')
+    .normalize('NFKD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+}
+
 /** Text that represents a thesis for matching purposes. */
 function thesisText(t: MockThesis): string {
   return [t.title, t.scientific_field ?? '', t.keywords.join(' '), t.abstract ?? ''].join(' ')
@@ -184,9 +195,16 @@ export async function mockRecommend(req: RecommendRequest): Promise<RecommendRes
     )
   }
 
+  // Hard filter (parity with the backend): only theses of the requested type
+  // score, show as evidence, and keep a mentor in the results.
+  const wantType = req.thesis_type ? normalizeType(req.thesis_type) : null
+
   const results: MentorRecommendation[] = candidates
     .map((m) => {
-      const scored = m.theses
+      const pool = wantType
+        ? m.theses.filter((t) => normalizeType(t.thesis_type) === wantType)
+        : m.theses
+      const scored = pool
         .map((t) => ({ t, s: scoreThesis(effectiveTokens, t) }))
         .filter((x) => x.s > 0)
         .sort((a, b) => b.s - a.s)

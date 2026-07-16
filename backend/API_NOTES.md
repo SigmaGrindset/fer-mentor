@@ -3,7 +3,9 @@
 The frontend (in `frontend/`) is already built against these expectations. Honor them.
 
 ## Endpoints (response shapes are Pydantic models in `core/schemas.py`)
-- `POST /api/recommend` — body `RecommendRequest` → `RecommendResponse`
+- `POST /api/recommend` — body `RecommendRequest` → `RecommendResponse`; optional
+  `thesis_type: "zavrsni" | "diplomski"` hard-filters which theses are searched and
+  shown as evidence (omitted/null = all types, incl. doktorski)
 - `GET /api/mentors/{id}` → `MentorDetail`; **return HTTP 404 (not 200/null) for an unknown id**
 - `GET /api/mentors?zavod=&field=` → `MentorListResponse` (support both `zavod` and `field` query params)
 - `GET /api/health` → `HealthResponse` (`{ "status": "ok" }`)

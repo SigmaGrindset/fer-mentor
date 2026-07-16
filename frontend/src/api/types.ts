@@ -31,11 +31,16 @@ export interface MentorRecommendation {
   explanation: string
 }
 
+/** Thesis-type hard filter for the mentor search; omit/null = all types. */
+export type ThesisTypeFilter = 'zavrsni' | 'diplomski'
+
 export interface RecommendRequest {
   query: string
   top_k?: number
   zavod?: string | null
   field?: string | null
+  /** only theses of this type are searched and shown as evidence */
+  thesis_type?: ThesisTypeFilter | null
 }
 
 export interface RecommendResponse {

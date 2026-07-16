@@ -5,6 +5,8 @@ backend agent implements the endpoints.
 """
 from __future__ import annotations
 
+from typing import Literal
+
 from pydantic import BaseModel, Field, model_validator
 
 
@@ -36,6 +38,9 @@ class RecommendRequest(BaseModel):
     top_k: int = Field(default=10, ge=1, le=50)
     zavod: str | None = None
     field: str | None = None
+    # Hard filter: only theses of this type are searched and shown as evidence.
+    # None = all types (incl. doktorski, which the UI doesn't offer).
+    thesis_type: Literal["zavrsni", "diplomski"] | None = None
 
 
 class RecommendResponse(BaseModel):

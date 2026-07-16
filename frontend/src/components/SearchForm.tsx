@@ -4,7 +4,15 @@ import { ZavodSelect } from './ZavodSelect'
 export interface SearchValues {
   query: string
   zavod: string
+  /** '' = all types, otherwise 'zavrsni' | 'diplomski' */
+  thesisType: string
 }
+
+const TYPE_OPTIONS = [
+  { value: '', label: 'Svi radovi' },
+  { value: 'zavrsni', label: 'Završni' },
+  { value: 'diplomski', label: 'Diplomski' },
+]
 
 const EXAMPLES = [
   'Računalni vid i prepoznavanje objekata',
@@ -16,22 +24,25 @@ const EXAMPLES = [
 export function SearchForm({
   initialQuery = '',
   initialZavod = '',
+  initialThesisType = '',
   pending,
   onSubmit,
 }: {
   initialQuery?: string
   initialZavod?: string
+  initialThesisType?: string
   pending: boolean
   onSubmit: (values: SearchValues) => void
 }) {
   const [query, setQuery] = useState(initialQuery)
   const [zavod, setZavod] = useState(initialZavod)
+  const [thesisType, setThesisType] = useState(initialThesisType)
 
   function submit(e: React.FormEvent) {
     e.preventDefault()
     const trimmed = query.trim()
     if (!trimmed) return
-    onSubmit({ query: trimmed, zavod })
+    onSubmit({ query: trimmed, zavod, thesisType })
   }
 
   return (
@@ -58,11 +69,39 @@ export function SearchForm({
       />
 
       <div className="mt-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-2">
-          <label htmlFor="zavod" className="text-sm text-muted">
-            Zavod
-          </label>
-          <ZavodSelect value={zavod} onChange={setZavod} />
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
+          <div className="flex items-center gap-2">
+            <label htmlFor="zavod" className="text-sm text-muted">
+              Zavod
+            </label>
+            <ZavodSelect value={zavod} onChange={setZavod} />
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted">Vrsta rada</span>
+            <div
+              role="group"
+              aria-label="Vrsta rada"
+              className="flex shrink-0 rounded border border-line bg-surface p-0.5"
+            >
+              {TYPE_OPTIONS.map((opt) => {
+                const active = thesisType === opt.value
+                return (
+                  <button
+                    key={opt.value || 'all'}
+                    type="button"
+                    onClick={() => setThesisType(opt.value)}
+                    aria-pressed={active}
+                    className={`whitespace-nowrap rounded px-3 py-2 text-xs font-semibold transition-colors ${
+                      active ? 'bg-brand text-white' : 'text-muted hover:text-ink'
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
         </div>
 
         <button
