@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<OAI-PMH xmlns="http://www.openarchives.org/OAI/2.0/">
+  <responseDate>2026-07-01T10:00:00Z</responseDate>
+  <request verb="ListRecords" metadataPrefix="mods">https://example.test/oai/</request>
+  <ListRecords>
+
+    <!-- 1) Good record: advisor + committee + full metadata. -->
+    <record>
+      <header>
+        <identifier>oai:repozitorij.fer.unizg.hr:fer:1001</identifier>
+        <datestamp>2026-06-01</datestamp>
+      </header>
+      <metadata>
+        <mods xmlns="http://www.loc.gov/mods/v3" ID="master">
+          <titleInfo lang="hrv">
+            <title>Duboko učenje za detekciju objekata</title>
+          </titleInfo>
+          <titleInfo type="alternative" lang="eng">
+            <title>Deep learning for object detection</title>
+          </titleInfo>
+          <abstract lang="hrv">Sažetak rada o dubokom učenju.</abstract>
+          <abstract lang="eng">Abstract about deep learning.</abstract>
+          <name type="personal">
+            <namePart type="family">Kovačević</namePart>
+            <namePart type="given">Ivana</namePart>
+            <role>
+              <roleTerm type="text" authority="loc">Thesis advisor</roleTerm>
+              <roleTerm type="text" lang="hrv">Mentor</roleTerm>
+            </role>
+          </name>
+          <name type="personal">
+            <namePart type="family">Horvat</namePart>
+            <namePart type="given">Marko</namePart>
+            <role>
+              <roleTerm type="text" authority="loc">Degree committee member</roleTerm>
+              <roleTerm type="text" lang="hrv">Predsjednik povjerenstva</roleTerm>
+            </role>
+          </name>
+          <genre authority="coar">master thesis</genre>
+          <originInfo>
+            <dateIssued>2024-09-15</dateIssued>
+          </originInfo>
+          <identifier type="urn">urn:nbn:hr:168:001001</identifier>
+          <subject authority="nvzz.hr">
+            <topic lang="hrv">Tehničke znanosti</topic>
+            <topic lang="hrv">Računarstvo</topic>
+          </subject>
+          <subject lang="hrv">
+            <topic>duboko učenje</topic>
+            <topic>detekcija objekata</topic>
+          </subject>
+        </mods>
+      </metadata>
+    </record>
+
+    <!-- 2) Deleted record: header only, no metadata. -->
+    <record>
+      <header status="deleted">
+        <identifier>oai:repozitorij.fer.unizg.hr:fer:1002</identifier>
+        <datestamp>2026-06-02</datestamp>
+      </header>
+    </record>
+
+    <!-- 3) Record without a thesis advisor (committee only). -->
+    <record>
+      <header>
+        <identifier>oai:repozitorij.fer.unizg.hr:fer:1003</identifier>
+        <datestamp>2026-06-03</datestamp>
+      </header>
+      <metadata>
+        <mods xmlns="http://www.loc.gov/mods/v3" ID="master">
+          <titleInfo lang="hrv">
+            <title>Rad bez navedenog mentora</title>
+          </titleInfo>
+          <name type="personal">
+            <namePart type="family">Novak</namePart>
+            <namePart type="given">Ana</namePart>
+            <role>
+              <roleTerm type="text" authority="loc">Degree committee member</roleTerm>
+              <roleTerm type="text" lang="hrv">Član povjerenstva</roleTerm>
+            </role>
+          </name>
+          <genre authority="coar">bachelor thesis</genre>
+          <originInfo>
+            <dateIssued>2023</dateIssued>
+          </originInfo>
+        </mods>
+      </metadata>
+    </record>
+
+  </ListRecords>
+</OAI-PMH>
