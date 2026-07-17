@@ -7,6 +7,12 @@ recommender functions), so the suite runs without torch installed.
 """
 from __future__ import annotations
 
+import os
+
+# Must happen before core.config is imported (env beats .env): tests must
+# never initialize Sentry, even on a machine whose .env has a real DSN.
+os.environ["SENTRY_DSN"] = ""
+
 import pytest
 from fastapi.testclient import TestClient
 
