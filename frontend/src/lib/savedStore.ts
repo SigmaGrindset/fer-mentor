@@ -6,8 +6,14 @@
  */
 
 import { USING_REAL_API } from '../api'
+import type { EvidenceThesis } from '../api'
 
-/** Snapshot of a saved mentor — `MentorSummary` fields plus the save time. */
+/**
+ * Snapshot of a saved mentor — `MentorSummary` fields plus the save time.
+ * The search-snapshot fields are present only when the mentor was saved from
+ * search results; their absence means "saved outside search" (profile page,
+ * or an entry written before these fields existed).
+ */
 export interface SavedMentor {
   id: number
   full_name: string
@@ -15,6 +21,13 @@ export interface SavedMentor {
   n_theses: number
   /** epoch ms; lists render newest-first */
   savedAt: number
+  /** the search query that produced the recommendation */
+  query?: string
+  /** aggregated relevance score at save time */
+  score?: number
+  /** similarity-scored theses that justified the recommendation */
+  evidence?: EvidenceThesis[]
+  matched_keywords?: string[]
 }
 
 /**

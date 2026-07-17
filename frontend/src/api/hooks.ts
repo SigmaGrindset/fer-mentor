@@ -1,5 +1,5 @@
 /** TanStack Query hooks wrapping the API client. */
-import { useInfiniteQuery, useMutation, useQuery } from '@tanstack/react-query'
+import { useInfiniteQuery, useMutation, useQueries, useQuery } from '@tanstack/react-query'
 import {
   getMentor,
   getProgrammes,
@@ -26,6 +26,20 @@ export function useMentor(id: number | undefined) {
     queryKey: ['mentor', id],
     queryFn: () => getMentor(id as number),
     enabled: typeof id === 'number' && !Number.isNaN(id),
+  })
+}
+
+/**
+ * Parallel mentor-detail fetches for the comparison view. Shares the
+ * `['mentor', id]` cache with `useMentor`, so already-visited profiles render
+ * instantly. Results are positional — index i corresponds to `ids[i]`.
+ */
+export function useMentorsDetails(ids: number[]) {
+  return useQueries({
+    queries: ids.map((id) => ({
+      queryKey: ['mentor', id],
+      queryFn: () => getMentor(id),
+    })),
   })
 }
 

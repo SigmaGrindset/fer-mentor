@@ -7,7 +7,17 @@ import { formatSimilarity, formatThesisType, pluralRadovi } from '../lib/format'
 import { BookmarkButton } from './BookmarkButton'
 import { ScoreMeter } from './ScoreMeter'
 
-export function MentorCard({ mentor, rank }: { mentor: MentorRecommendation; rank: number }) {
+export function MentorCard({
+  mentor,
+  rank,
+  query,
+}: {
+  mentor: MentorRecommendation
+  rank: number
+  /** the submitted search query; saved alongside the bookmark so the
+   *  comparison view can show the evidence that led to saving */
+  query?: string
+}) {
   const [open, setOpen] = useState(false)
   const back = backState(useLocation())
   const { isMentorSaved, toggleMentor } = useSaved()
@@ -53,6 +63,14 @@ export function MentorCard({ mentor, rank }: { mentor: MentorRecommendation; ran
                     full_name: mentor.full_name,
                     zavod_code: mentor.zavod_code,
                     n_theses: mentor.n_theses,
+                    ...(query
+                      ? {
+                          query,
+                          score: mentor.score,
+                          evidence: mentor.evidence,
+                          matched_keywords: mentor.matched_keywords,
+                        }
+                      : {}),
                   })
                 }
                 itemLabel={mentor.full_name}

@@ -15,7 +15,14 @@ const SLOT_PX = 20
  * year; empty years stay empty so gaps in activity are visible. Values live
  * in per-bar hover tooltips (the thesis list below is the full data view).
  */
-export function ActivityTimeline({ theses }: { theses: { year?: number | null }[] }) {
+export function ActivityTimeline({
+  theses,
+  showHeading = true,
+}: {
+  theses: { year?: number | null }[]
+  /** false renders just the chart, for contexts with their own label (compare view) */
+  showHeading?: boolean
+}) {
   const counts = new Map<number, number>()
   for (const t of theses) {
     if (t.year != null && t.year >= MIN_SANE_YEAR && t.year <= MAX_SANE_YEAR) {
@@ -37,10 +44,12 @@ export function ActivityTimeline({ theses }: { theses: { year?: number | null }[
   const peak = slots.reduce((a, b) => (b.count > a.count ? b : a))
 
   return (
-    <div className="mt-5">
-      <h2 className="font-mono text-[0.68rem] uppercase tracking-[0.14em] text-muted">
-        Aktivnost po godinama
-      </h2>
+    <div className={showHeading ? 'mt-5' : undefined}>
+      {showHeading && (
+        <h2 className="font-mono text-[0.68rem] uppercase tracking-[0.14em] text-muted">
+          Aktivnost po godinama
+        </h2>
+      )}
       <div
         role="img"
         aria-label={`Radovi po godinama, od ${minYear}. do ${maxYear}. Najviše ${peak.year}.: ${pluralRadovi(peak.count)}.`}

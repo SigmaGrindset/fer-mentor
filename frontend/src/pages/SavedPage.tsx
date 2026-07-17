@@ -1,6 +1,8 @@
+import { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { Badge } from '../components/Badge'
 import { BookmarkButton } from '../components/BookmarkButton'
+import { MentorCompare } from '../components/MentorCompare'
 import { StateMessage } from '../components/StateMessage'
 import { useDocumentTitle } from '../hooks/useDocumentTitle'
 import { useSaved } from '../hooks/useSaved'
@@ -13,6 +15,21 @@ export function SavedPage() {
   const { mentors, courses, toggleMentor, toggleCourse } = useSaved()
   const back = backState(useLocation())
   const empty = mentors.length === 0 && courses.length === 0
+
+  const [compareIds, setCompareIds] = useState<number[]>([])
+  const canCompare = mentors.length >= 2
+  // Derived from the live list, so a mentor unsaved here or in another tab
+  // drops out of the comparison automatically.
+  const selected = mentors.filter((m) => compareIds.includes(m.id))
+
+  function toggleCompare(id: number) {
+    setCompareIds((ids) => {
+      // Drop ids of since-unsaved mentors so they can't hold a slot.
+      const live = ids.filter((x) => mentors.some((m) => m.id === x))
+      if (live.includes(id)) return live.filter((x) => x !== id)
+      return live.length >= 4 ? live : [...live, id]
+    })
+  }
 
   return (
     <div className="space-y-10">
@@ -57,32 +74,54 @@ export function SavedPage() {
               {mentors.length}
             </p>
           </div>
+          {canCompare && (
+            <p className="mt-3 text-sm text-muted">Označi 2–4 mentora za usporedbu.</p>
+          )}
           <ul className="divide-y divide-hairline">
-            {mentors.map((m) => (
-              <li key={m.id} className="flex items-center justify-between gap-4 py-4">
-                <div className="min-w-0">
-                  <Link
-                    to={`/mentor/${m.id}`}
-                    state={back}
-                    className="font-serif text-lg font-semibold tracking-tightish text-ink decoration-brand-200 underline-offset-4 hover:text-brand hover:underline"
-                  >
-                    {m.full_name}
-                  </Link>
-                  <div className="mt-1 flex flex-wrap items-center gap-2">
-                    {m.zavod_code && <Badge variant="zavod">{m.zavod_code}</Badge>}
-                    <span className="text-xs text-muted">{pluralRadovi(m.n_theses)}</span>
+            {mentors.map((m) => {
+              const checked = compareIds.includes(m.id)
+              const full = !checked && selected.length >= 4
+              return (
+                <li key={m.id} className="flex items-center justify-between gap-4 py-4">
+                  <div className="flex min-w-0 items-center gap-3">
+                    {canCompare && (
+                      <input
+                        type="checkbox"
+                        className="h-4 w-4 shrink-0 accent-brand"
+                        checked={checked}
+                        disabled={full}
+                        onChange={() => toggleCompare(m.id)}
+                        aria-label={`Usporedi: ${m.full_name}`}
+                        title={full ? 'Najviše četiri mentora' : undefined}
+                      />
+                    )}
+                    <div className="min-w-0">
+                      <Link
+                        to={`/mentor/${m.id}`}
+                        state={back}
+                        className="font-serif text-lg font-semibold tracking-tightish text-ink decoration-brand-200 underline-offset-4 hover:text-brand hover:underline"
+                      >
+                        {m.full_name}
+                      </Link>
+                      <div className="mt-1 flex flex-wrap items-center gap-2">
+                        {m.zavod_code && <Badge variant="zavod">{m.zavod_code}</Badge>}
+                        <span className="text-xs text-muted">{pluralRadovi(m.n_theses)}</span>
+                      </div>
+                    </div>
                   </div>
-                </div>
-                <BookmarkButton
-                  saved
-                  onToggle={() => toggleMentor(m)}
-                  itemLabel={m.full_name}
-                />
-              </li>
-            ))}
+                  <BookmarkButton
+                    saved
+                    onToggle={() => toggleMentor(m)}
+                    itemLabel={m.full_name}
+                  />
+                </li>
+              )
+            })}
           </ul>
         </section>
       )}
+
+      {selected.length >= 2 && <MentorCompare mentors={selected} />}
 
       {courses.length > 0 && (
         <section>

@@ -173,7 +173,8 @@ function toSummary(m: MockMentor): MentorSummary {
     id: m.id,
     full_name: m.full_name,
     zavod_code: m.zavod_code,
-    n_theses: m.theses.length,
+    // Repo theses + current-year schedule topics, matching the backend's count.
+    n_theses: m.theses.length + m.current_topics.length,
   }
 }
 
@@ -233,7 +234,7 @@ export async function mockRecommend(req: RecommendRequest): Promise<RecommendRes
         full_name: m.full_name,
         zavod_code: m.zavod_code,
         score: Number(Math.min(0.99, agg).toFixed(3)),
-        n_theses: m.theses.length,
+        n_theses: m.theses.length + m.current_topics.length,
         evidence,
         current_topics: m.current_topics,
         matched_keywords: matched,
@@ -255,13 +256,29 @@ export async function mockGetMentor(id: number): Promise<MentorDetail> {
   if (!m) {
     throw new ApiNotFound(`Mentor ${id} nije pronađen.`)
   }
+  // Real-backend parity: current-year topics appear in the detail response as
+  // title-only schedule-source theses. Ids sit outside the mock thesis range.
+  const currentYear = new Date().getFullYear()
+  const scheduleTheses: ThesisOut[] = m.current_topics.map((title, i) => ({
+    id: 900000 + m.id * 100 + i,
+    title,
+    year: currentYear,
+    thesis_type: null,
+    scientific_field: null,
+    keywords: [],
+    source: 'schedule',
+    url: null,
+  }))
+  const theses = [...scheduleTheses, ...m.theses.map(toThesisOut)].sort(
+    (a, b) => (b.year ?? 0) - (a.year ?? 0),
+  )
   return {
     id: m.id,
     full_name: m.full_name,
     zavod_code: m.zavod_code,
     scientific_fields: m.scientific_fields,
-    n_theses: m.theses.length,
-    theses: m.theses.map(toThesisOut).sort((a, b) => (b.year ?? 0) - (a.year ?? 0)),
+    n_theses: theses.length,
+    theses,
   }
 }
 

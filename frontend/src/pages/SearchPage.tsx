@@ -164,7 +164,12 @@ export function SearchPage() {
             </p>
             <div className="mt-6 space-y-5">
               {results.map((mentor, i) => (
-                <MentorCard key={mentor.mentor_id} mentor={mentor} rank={i + 1} />
+                <MentorCard
+                  key={mentor.mentor_id}
+                  mentor={mentor}
+                  rank={i + 1}
+                  query={submittedQuery ?? undefined}
+                />
               ))}
             </div>
           </div>
