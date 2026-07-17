@@ -16,9 +16,11 @@ import { pluralRadovi } from '../lib/format'
 
 export function MentorPage() {
   const { id } = useParams<{ id: string }>()
-  const numericId = id ? Number(id) : undefined
-  const { data, isPending, isError, error } = useMentor(numericId)
-  const slow = useSlowRequest(isPending)
+  // /mentor/foo would parse to NaN, disable the query and leave the page
+  // pending forever; anything but a plain positive integer is a 404 up front.
+  const validId = id !== undefined && /^\d+$/.test(id)
+  const { data, isPending, isError, error } = useMentor(validId ? Number(id) : undefined)
+  const slow = useSlowRequest(validId && isPending)
   const { isMentorSaved, toggleMentor } = useSaved()
 
   // Return to the search/list we came from, filters intact; the recommender is
@@ -26,7 +28,7 @@ export function MentorPage() {
   const backTo = backTarget(useLocation().state) ?? '/'
   const backLabel = backTo.startsWith('/mentori') ? 'Natrag na popis mentora' : 'Natrag na pretragu'
 
-  const notFound = isError && error instanceof ApiError && error.status === 404
+  const notFound = !validId || (isError && error instanceof ApiError && error.status === 404)
 
   // The name arrives with the fetch, so the title settles a beat after navigation.
   useDocumentTitle(data?.full_name ?? (notFound ? 'Mentor nije pronađen' : 'Profil mentora'))
@@ -40,7 +42,7 @@ export function MentorPage() {
         ← {backLabel}
       </Link>
 
-      {isPending && (
+      {validId && isPending && (
         <>
           <LoadingStatus label="Učitavam profil mentora…" slow={slow} />
           <MentorDetailSkeleton />
