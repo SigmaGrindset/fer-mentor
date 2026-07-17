@@ -5,7 +5,7 @@ import { pluralRadovi } from '../lib/format'
 import { Badge } from './Badge'
 
 /** Compact mentor link card: name, zavod badge, thesis count. Used in the
- * browse list and the profile's "Studenti su također gledali" strip. */
+ * browse list and the profile's "Mentori sa sličnim područjima rada" strip. */
 export function MentorTile({ mentor, state }: { mentor: MentorSummary; state?: BackState }) {
   return (
     <Link

@@ -6,11 +6,11 @@ import { MentorListSkeleton } from './Skeleton'
 
 const heading = (
   <h2 className="font-mono text-[0.68rem] uppercase tracking-[0.14em] text-muted">
-    Studenti su također gledali
+    Mentori sa sličnim područjima rada
   </h2>
 )
 
-/** "Studenti su također gledali" — mentors with the most similar thesis topics.
+/** "Mentori sa sličnim područjima rada" — mentors with the most similar thesis topics.
  * Sits above the thesis list, so it reserves its height with a skeleton while
  * loading (no shove-down when data lands) and collapses to nothing on error or
  * when the backend has no suggestions. */

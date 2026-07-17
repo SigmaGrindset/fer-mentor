@@ -205,7 +205,7 @@ def get_similar_mentors(
     db: Session = Depends(get_db),
     limit: int = Query(6, ge=1, le=20),
 ) -> list[SimilarMentor]:
-    """Mentors with the most similar thesis corpora ("Studenti su također gledali")."""
+    """Mentors with the most similar thesis corpora ("Mentori sa sličnim područjima rada")."""
     if db.get(Mentor, mentor_id) is None:
         raise HTTPException(status_code=404, detail="Mentor nije pronađen")
     return similar_mentors(db, mentor_id, top_k=limit)
