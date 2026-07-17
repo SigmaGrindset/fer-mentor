@@ -27,6 +27,7 @@ from sqlalchemy.orm import Session
 from core import models  # noqa: F401  (registers tables)
 from core.config import settings
 from core.db import SessionLocal, engine
+from core.ingest_log import ingest_run
 from core.models import Course, CourseEmbedding
 from recommender.embedder import encode_passages
 
@@ -133,9 +134,12 @@ def main() -> None:
     ap.add_argument("--skip-index", action="store_true")
     args = ap.parse_args()
 
-    build(limit=args.limit, batch_size=args.batch_size, refresh=args.refresh)
-    if not args.skip_index:
-        create_index()
+    with ingest_run("course_embeddings") as stats:
+        done = build(limit=args.limit, batch_size=args.batch_size, refresh=args.refresh)
+        stats.parsed = done
+        stats.upserted = done
+        if not args.skip_index:
+            create_index()
 
 
 if __name__ == "__main__":

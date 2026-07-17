@@ -25,6 +25,7 @@ from sqlalchemy.orm import Session
 
 from core import models  # noqa: F401  (registers tables)
 from core.db import SessionLocal
+from core.ingest_log import ingest_run
 from core.models import Course, CourseOffering, Programme
 from ingestion.harvest_courses import (
     BASE,
@@ -103,6 +104,18 @@ def _upsert_offering(
 
 
 def ingest(*, refresh: bool, skip_detail: bool, limit: int | None, with_en: bool, delay: float) -> None:
+    with ingest_run("courses") as stats:
+        _ingest(
+            stats,
+            refresh=refresh,
+            skip_detail=skip_detail,
+            limit=limit,
+            with_en=with_en,
+            delay=delay,
+        )
+
+
+def _ingest(stats, *, refresh: bool, skip_detail: bool, limit: int | None, with_en: bool, delay: float) -> None:
     client = make_client()
 
     programmes: list[tuple[str, str, str]] = [  # (code, area, level)
@@ -118,7 +131,7 @@ def ingest(*, refresh: bool, skip_detail: bool, limit: int | None, with_en: bool
     with SessionLocal() as session:
         for code, area, level in programmes:
             html = fetch(client, f"/studiji/{code}", RAW_DIR, refresh=refresh, delay=delay)
-            page = parse_programme(html)
+            page = parse_programme(html, stats)
             prog = _get_or_create_programme(session, code, level, area, page.name_hr)
             n_elec = 0
             for row in page.rows:
@@ -128,6 +141,8 @@ def ingest(*, refresh: bool, skip_detail: bool, limit: int | None, with_en: bool
                 )
                 course_codes.add(row.code)
                 n_elec += int(row.is_elective)
+            stats.parsed += len(page.rows)
+            stats.upserted += len(page.rows)
             session.commit()
             print(f"  {code:24s} {level:13s} courses={len(page.rows):3d} elective={n_elec:3d}  [{page.name_hr}]")
 
@@ -148,6 +163,7 @@ def ingest(*, refresh: bool, skip_detail: bool, limit: int | None, with_en: bool
                 d = parse_detail(html, html_en)
                 c = session.scalar(select(Course).where(Course.code == code))
                 if c is None:
+                    stats.reject(f"detail {code}: no matching course row from pass 1")
                     continue
                 if d.name_hr:
                     c.name_hr = d.name_hr

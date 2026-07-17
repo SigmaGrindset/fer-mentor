@@ -12,6 +12,8 @@ from pathlib import Path
 
 from bs4 import BeautifulSoup, Tag
 
+from core.ingest_log import RunStats
+
 from .normalize import parse_name
 
 # (filename, thesis_type) pairs. The files are valid UTF-8 despite mojibake in
@@ -69,7 +71,9 @@ def _make_ext_id(smjer: str, student: str, title: str) -> str:
     return hashlib.sha1(raw).hexdigest()[:24]
 
 
-def parse_file(path: Path, thesis_type: str) -> list[ScheduleThesis]:
+def parse_file(
+    path: Path, thesis_type: str, stats: RunStats | None = None
+) -> list[ScheduleThesis]:
     soup = BeautifulSoup(path.read_text(encoding="utf-8"), "lxml")
     table = soup.select_one("table.v1table.table.tablesorter_tbl")
     if table is None:
@@ -78,10 +82,12 @@ def parse_file(path: Path, thesis_type: str) -> list[ScheduleThesis]:
     rows = tbody.find_all("tr") if tbody else []
 
     out: list[ScheduleThesis] = []
-    for tr in rows:
+    for i, tr in enumerate(rows, start=1):
         tds = tr.find_all("td")
         # Columns: Smjer, Student, Tema, Mentor, Termin, Povjerenstvo.
         if len(tds) < 4:
+            if stats:
+                stats.reject(f"{path.name} row {i}: fewer than 4 cells")
             continue
         smjer = _cell_text(tds[0]) or None
         student_raw = _cell_text(tds[1])
@@ -90,9 +96,13 @@ def parse_file(path: Path, thesis_type: str) -> list[ScheduleThesis]:
 
         # Skip empty / template rows (no real title or mentor).
         if not title or title == "-":
+            if stats:
+                stats.reject(f"{path.name} row {i}: empty title")
             continue
         mentor = _parse_mentor_cell(mentor_raw)
         if mentor is None:
+            if stats:
+                stats.reject(f"{path.name} row {i}: unparseable mentor cell {mentor_raw!r}")
             continue
         prezime, ime, zavod = mentor
 
@@ -118,12 +128,16 @@ def parse_file(path: Path, thesis_type: str) -> list[ScheduleThesis]:
     return out
 
 
-def parse_schedules(data_dir: Path) -> list[ScheduleThesis]:
+def parse_schedules(
+    data_dir: Path, stats: RunStats | None = None
+) -> list[ScheduleThesis]:
     """Parse every configured schedule file under `data_dir`."""
     results: list[ScheduleThesis] = []
     for filename, thesis_type in SCHEDULE_FILES:
         path = data_dir / filename
         if not path.exists():
             raise FileNotFoundError(path)
-        results.extend(parse_file(path, thesis_type))
+        results.extend(parse_file(path, thesis_type, stats))
+    if stats:
+        stats.parsed = len(results)
     return results

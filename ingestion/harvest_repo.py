@@ -15,6 +15,8 @@ from pathlib import Path
 import httpx
 from lxml import etree
 
+from core.ingest_log import RunStats
+
 from .normalize import parse_name
 
 OAI_NS = "http://www.openarchives.org/OAI/2.0/"
@@ -323,6 +325,7 @@ def iter_records(
     limit: int | None = None,
     delay: float = 0.4,
     refresh: bool = False,
+    stats: RunStats | None = None,
 ) -> Iterator[RepoThesis]:
     """Harvest and parse repo theses, yielding at most `limit` records."""
     count = 0
@@ -331,6 +334,14 @@ def iter_records(
         for record in tree.findall(".//oai:record", NS):
             thesis = parse_record(record)
             if thesis is None:
+                if stats:
+                    header = record.find("oai:header/oai:identifier", NS)
+                    ident = (
+                        header.text.strip()
+                        if header is not None and header.text
+                        else "(no identifier)"
+                    )
+                    stats.reject(f"record {ident}: deleted or without metadata")
                 continue
             yield thesis
             count += 1

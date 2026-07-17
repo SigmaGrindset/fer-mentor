@@ -28,6 +28,7 @@ from sqlalchemy.orm import Session
 from core import models  # noqa: F401  (registers tables)
 from core.config import settings
 from core.db import SessionLocal
+from core.ingest_log import RunStats, finish_run, start_run
 from core.models import CommitteeMembership, Mentor, Thesis
 from ingestion.harvest_repo import RepoThesis, iter_records
 from ingestion.normalize import MentorKey, make_slug, match_slug
@@ -121,6 +122,7 @@ def upsert_schedule(
     items: list[ScheduleThesis],
     slug_to_id: dict[str, int],
     pool: MentorPool,
+    stats: RunStats | None = None,
 ) -> int:
     n = 0
     seen: set[str] = set()
@@ -133,7 +135,13 @@ def upsert_schedule(
         slug = pool.canonical(item.mentor_prezime, item.mentor_ime)
         mentor_id = slug_to_id.get(slug) if slug else None
         if mentor_id is None:
-            continue  # mentor unresolved (should not happen — pool built first)
+            # Should not happen — the pool is built from these same rows first.
+            if stats:
+                stats.reject(
+                    f"schedule {item.ext_id}: unresolved mentor "
+                    f"{item.mentor_prezime}, {item.mentor_ime}"
+                )
+            continue
         row = _get_thesis(session, "schedule", item.ext_id)
         if row is None:
             row = Thesis(source="schedule", ext_id=item.ext_id)
@@ -155,12 +163,20 @@ def upsert_repo(
     item: RepoThesis,
     slug_to_id: dict[str, int],
     pool: MentorPool,
+    stats: RunStats | None = None,
 ) -> bool:
     if item.mentor_prezime is None or item.mentor_ime is None:
+        if stats:
+            stats.reject(f"repo {item.ext_id}: no thesis advisor")
         return False  # no advisor -> useless for recommendation
     slug = pool.canonical(item.mentor_prezime, item.mentor_ime)
     mentor_id = slug_to_id.get(slug) if slug else None
     if mentor_id is None:
+        if stats:
+            stats.reject(
+                f"repo {item.ext_id}: unresolved advisor "
+                f"{item.mentor_prezime}, {item.mentor_ime}"
+            )
         return False
 
     row = _get_thesis(session, "repo", item.ext_id)
@@ -188,6 +204,11 @@ def upsert_repo(
         cm_slug = pool.canonical(member.prezime, member.ime)
         cm_id = slug_to_id.get(cm_slug) if cm_slug else None
         if cm_id is None:
+            if stats:
+                stats.warn(
+                    f"repo {item.ext_id}: unresolved committee member "
+                    f"{member.prezime}, {member.ime}"
+                )
             continue
         session.add(
             CommitteeMembership(thesis_id=row.id, mentor_id=cm_id, role=member.role)
@@ -230,52 +251,74 @@ def run(
 ) -> None:
     pool = MentorPool()
 
-    schedule_items: list[ScheduleThesis] = []
+    # One persisted ingest_runs row per active source. Both share the fate of
+    # this function (parse + upsert happen in one pass over shared state).
+    schedule_stats = RunStats()
+    repo_stats = RunStats()
+    runs: list[tuple[int, RunStats]] = []
     if not skip_schedule:
-        schedule_items = parse_schedules(DATA_DIR)
-        for s in schedule_items:
-            pool.resolve(
-                s.mentor_prezime, s.mentor_ime, source="schedule",
-                zavod_code=s.zavod_code,
-            )
-        print(f"[schedule] parsed {len(schedule_items)} theses")
-
-    # Harvest repo into memory first so the mentor pool is complete before the
-    # join (committee members also need to resolve against the pool).
-    repo_items: list[RepoThesis] = []
+        runs.append((start_run("schedule"), schedule_stats))
     if not skip_repo:
-        for item in iter_records(
-            settings.oai_base_url, RAW_DIR, limit=repo_limit, delay=delay,
-            refresh=refresh,
-        ):
-            repo_items.append(item)
-            if item.mentor_prezime and item.mentor_ime:
-                pool.resolve(item.mentor_prezime, item.mentor_ime, source="repo")
-            for cm in item.committee:
-                pool.resolve(cm.prezime, cm.ime, source="repo")
-        print(f"[repo] harvested {len(repo_items)} records")
+        runs.append((start_run("repo"), repo_stats))
 
-    with SessionLocal() as session:
-        slug_to_id = upsert_mentors(session, pool)
-        print(f"[mentors] upserted {len(slug_to_id)} unique mentors")
+    try:
+        schedule_items: list[ScheduleThesis] = []
+        if not skip_schedule:
+            schedule_items = parse_schedules(DATA_DIR, stats=schedule_stats)
+            for s in schedule_items:
+                pool.resolve(
+                    s.mentor_prezime, s.mentor_ime, source="schedule",
+                    zavod_code=s.zavod_code,
+                )
+            print(f"[schedule] parsed {len(schedule_items)} theses")
 
-        if schedule_items:
-            n = upsert_schedule(session, schedule_items, slug_to_id, pool)
-            print(f"[schedule] upserted {n} theses")
+        # Harvest repo into memory first so the mentor pool is complete before
+        # the join (committee members also need to resolve against the pool).
+        repo_items: list[RepoThesis] = []
+        if not skip_repo:
+            for item in iter_records(
+                settings.oai_base_url, RAW_DIR, limit=repo_limit, delay=delay,
+                refresh=refresh, stats=repo_stats,
+            ):
+                repo_items.append(item)
+                if item.mentor_prezime and item.mentor_ime:
+                    pool.resolve(item.mentor_prezime, item.mentor_ime, source="repo")
+                for cm in item.committee:
+                    pool.resolve(cm.prezime, cm.ime, source="repo")
+            repo_stats.parsed = len(repo_items)
+            print(f"[repo] harvested {len(repo_items)} records")
 
-        if repo_items:
-            seen_repo: set[str] = set()
-            n = 0
-            for item in repo_items:
-                if item.ext_id in seen_repo:
-                    continue
-                seen_repo.add(item.ext_id)
-                if upsert_repo(session, item, slug_to_id, pool):
-                    n += 1
-            print(f"[repo] upserted {n} theses (records with a resolvable advisor)")
+        with SessionLocal() as session:
+            slug_to_id = upsert_mentors(session, pool)
+            print(f"[mentors] upserted {len(slug_to_id)} unique mentors")
 
-        recompute_counts(session)
-        session.commit()
+            if schedule_items:
+                n = upsert_schedule(
+                    session, schedule_items, slug_to_id, pool, schedule_stats
+                )
+                schedule_stats.upserted = n
+                print(f"[schedule] upserted {n} theses")
+
+            if repo_items:
+                seen_repo: set[str] = set()
+                n = 0
+                for item in repo_items:
+                    if item.ext_id in seen_repo:
+                        continue
+                    seen_repo.add(item.ext_id)
+                    if upsert_repo(session, item, slug_to_id, pool, repo_stats):
+                        n += 1
+                repo_stats.upserted = n
+                print(f"[repo] upserted {n} theses (records with a resolvable advisor)")
+
+            recompute_counts(session)
+            session.commit()
+    except BaseException as exc:
+        for run_id, stats in runs:
+            finish_run(run_id, stats, status="failed", error=repr(exc))
+        raise
+    for run_id, stats in runs:
+        finish_run(run_id, stats, status="ok")
     print("[done] ingestion complete")
 
 

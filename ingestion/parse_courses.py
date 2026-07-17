@@ -19,6 +19,8 @@ from dataclasses import dataclass, field
 
 from bs4 import BeautifulSoup, Tag
 
+from core.ingest_log import RunStats
+
 
 @dataclass
 class CourseRow:
@@ -67,7 +69,7 @@ def _group_kind(title: str) -> str:
     return "mandatory"  # "Obavezni predmeti" and anything else default to mandatory
 
 
-def parse_programme(html: str) -> ProgrammePage:
+def parse_programme(html: str, stats: RunStats | None = None) -> ProgrammePage:
     soup = BeautifulSoup(html, "lxml")
     h1 = soup.find("h1")
     name = (h1.get_text(" ", strip=True) if h1 else None) or (
@@ -112,9 +114,19 @@ def parse_programme(html: str) -> ProgrammePage:
                 continue
             if "coursebox-content" in cls:
                 if current == "skip":
+                    if stats:
+                        stats.warn(
+                            f"semester {semester}: transversal course skipped "
+                            f"({el.get_text(' ', strip=True)[:60]!r})"
+                        )
                     continue
                 a = el.select_one('a[href^="/predmet/"]')
                 if a is None:
+                    if stats:
+                        stats.reject(
+                            f"semester {semester}: coursebox without /predmet/ link "
+                            f"({el.get_text(' ', strip=True)[:60]!r})"
+                        )
                     continue
                 code = a["href"].split("/predmet/", 1)[1].strip("/").split("?")[0]
                 if not code or (code, semester) in seen:
