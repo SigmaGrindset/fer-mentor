@@ -51,9 +51,73 @@ function SavedNavLink() {
   )
 }
 
+function mobileNavClass({ isActive }: { isActive: boolean }) {
+  return `flex flex-col items-center gap-1 py-2 text-[0.6rem] font-semibold uppercase tracking-[0.08em] transition-colors ${
+    isActive ? 'text-brand' : 'text-muted'
+  }`
+}
+
+function MobileNav() {
+  const { total } = useSaved()
+  return (
+    <nav
+      aria-label="Glavna navigacija"
+      className="fixed inset-x-0 bottom-0 z-40 border-t border-hairline bg-paper pb-[env(safe-area-inset-bottom)] sm:hidden"
+    >
+      <div className="grid grid-cols-4">
+        <NavLink to="/" className={mobileNavClass} end>
+          {/* Magnifier */}
+          <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+            <path
+              fillRule="evenodd"
+              d="M9 3.5a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11ZM2 9a7 7 0 1 1 12.45 4.39l3.08 3.08a.75.75 0 1 1-1.06 1.06l-3.08-3.08A7 7 0 0 1 2 9Z"
+              clipRule="evenodd"
+            />
+          </svg>
+          Pretraga
+        </NavLink>
+        <NavLink to="/izborni" className={mobileNavClass}>
+          {/* Open book */}
+          <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+            <path d="M10 4.06C8.72 3.11 6.95 2.5 4.75 2.5c-.98 0-1.92.12-2.78.35a.75.75 0 0 0-.57.73v10.5c0 .5.49.85.97.72a8.9 8.9 0 0 1 2.38-.3c2.09 0 3.68.66 4.5 1.4V4.06Z" />
+            <path d="M11 15.9c.82-.74 2.41-1.4 4.5-1.4.85 0 1.65.11 2.38.3.48.13.97-.22.97-.72V3.58a.75.75 0 0 0-.57-.73 11.1 11.1 0 0 0-2.78-.35c-2.2 0-3.97.61-5.25 1.56V15.9Z" />
+          </svg>
+          Izborni
+        </NavLink>
+        <NavLink to="/mentori" className={mobileNavClass}>
+          {/* Two people */}
+          <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+            <path d="M7 8.5a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM1.75 16.5c-.41 0-.76-.34-.69-.75.4-2.55 2.94-4.5 5.94-4.5s5.53 1.95 5.94 4.5c.07.41-.28.75-.69.75H1.75Z" />
+            <path d="M13.5 8a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5ZM14.35 16.5h3.96c.39 0 .72-.32.66-.7-.3-1.98-2.05-3.55-4.34-3.77.9 1 1.53 2.24 1.75 3.62.05.29.03.58-.03.85Z" />
+          </svg>
+          Mentori
+        </NavLink>
+        <NavLink to="/spremljeni" className={mobileNavClass}>
+          <span className="relative">
+            {/* Bookmark */}
+            <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+              <path
+                fillRule="evenodd"
+                d="M10 2c-1.72 0-3.4.14-5.06.4A1.5 1.5 0 0 0 3.75 3.9v13.36c0 .59.63.96 1.15.68L10 15.21l5.1 2.72c.52.28 1.15-.1 1.15-.68V3.89A1.5 1.5 0 0 0 15.06 2.4 31.7 31.7 0 0 0 10 2Z"
+                clipRule="evenodd"
+              />
+            </svg>
+            {total > 0 && (
+              <span className="tnum absolute -right-2.5 -top-1 text-[0.6rem] text-brand">
+                {total}
+              </span>
+            )}
+          </span>
+          Spremljeni
+        </NavLink>
+      </div>
+    </nav>
+  )
+}
+
 export function Layout({ children }: { children: ReactNode }) {
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex min-h-screen flex-col pb-[calc(3.5rem+env(safe-area-inset-bottom))] sm:pb-0">
       {/* Deep-teal utility bar — FER heritage, modernized */}
       <div className="bg-brand-deep text-brand-100">
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-5 py-1.5 text-[0.7rem] uppercase tracking-[0.14em]">
@@ -74,7 +138,7 @@ export function Layout({ children }: { children: ReactNode }) {
 
       {/* Header — typographic wordmark, no boxed logo */}
       <header className="border-b border-hairline bg-paper">
-        <div className="mx-auto flex max-w-5xl flex-col gap-4 px-5 py-5 sm:flex-row sm:items-end sm:justify-between">
+        <div className="mx-auto flex max-w-5xl items-end justify-between gap-4 px-5 py-5">
           <Link to="/" className="group leading-none">
             <span className="font-serif text-[1.7rem] font-semibold tracking-tightish text-ink">
               <span className="text-brand">FER</span>mentor
@@ -83,7 +147,10 @@ export function Layout({ children }: { children: ReactNode }) {
               Fakultet elektrotehnike i računarstva
             </span>
           </Link>
-          <nav className="flex flex-wrap items-center gap-x-5 gap-y-2 sm:gap-6 sm:pb-1">
+          <div className="self-start sm:hidden">
+            <ThemeToggle />
+          </div>
+          <nav className="hidden items-center gap-6 sm:flex sm:pb-1">
             <NavLink to="/" className={navClass} end>
               Pretraga
             </NavLink>
@@ -125,6 +192,8 @@ export function Layout({ children }: { children: ReactNode }) {
           </span>
         </div>
       </footer>
+
+      <MobileNav />
     </div>
   )
 }
