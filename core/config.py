@@ -29,5 +29,11 @@ class Settings(BaseSettings):
     # deploys are matched by a regex in the app, so they need not be listed here.
     cors_origins: str = "http://localhost:5173"
 
+    # Error monitoring. Empty = Sentry disabled (local dev, tests).
+    sentry_dsn: str = ""
+
+    # Level for the structured request log ("fermentor" logger).
+    log_level: str = "INFO"
+
 
 settings = Settings()

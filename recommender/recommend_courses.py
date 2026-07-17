@@ -16,10 +16,10 @@ import re
 from sqlalchemy import bindparam, select, text
 from sqlalchemy.orm import Session
 
+from core.metrics import time_stage
 from core.models import Course, CourseEmbedding, CourseOffering, Programme
 from core.schemas import CourseRecommendation
 
-from .embedder import encode_query
 from .textmatch import lexical_overlap, matched_query_terms
 
 # Over-fetch factor: a course may have several offerings (semesters) in one
@@ -87,19 +87,37 @@ def _explanation(ects: float | None, semester: int | None, matched: list[str]) -
     )
 
 
-def _profiles_offering(session: Session, course_id: int, level: str) -> list[str]:
-    """Names of same-level programmes that offer this course as an elective."""
-    rows = session.execute(
-        select(Programme.name_hr)
-        .join(CourseOffering, CourseOffering.programme_id == Programme.id)
-        .where(
-            CourseOffering.course_id == course_id,
-            CourseOffering.is_elective.is_(True),
-            Programme.level == level,
-        )
-        .distinct()
-    ).all()
-    return sorted(n for (n,) in rows)
+def passes_relevance_gate(pure: float, overlap: float) -> bool:
+    """Keep a candidate that is semantically strong on its own, or moderately
+    strong with at least one query term found in the course text."""
+    return pure >= SEMANTIC_ONLY_FLOOR or (overlap > 0.0 and pure >= BASE_FLOOR)
+
+
+def _profiles_offering_bulk(
+    session: Session, course_ids: list[int], level: str
+) -> dict[int, list[str]]:
+    """Names of same-level programmes offering each course as an elective.
+
+    One query for all courses (instead of one per course) — the result loop
+    below would otherwise pay a DB round-trip per recommendation.
+    """
+    if not course_ids:
+        return {}
+    with time_stage("db_ms"):
+        rows = session.execute(
+            select(CourseOffering.course_id, Programme.name_hr)
+            .join(Programme, CourseOffering.programme_id == Programme.id)
+            .where(
+                CourseOffering.course_id.in_(course_ids),
+                CourseOffering.is_elective.is_(True),
+                Programme.level == level,
+            )
+            .distinct()
+        ).all()
+    profiles: dict[int, set[str]] = {}
+    for course_id, name in rows:
+        profiles.setdefault(course_id, set()).add(name)
+    return {cid: sorted(names) for cid, names in profiles.items()}
 
 
 def recommend_courses(
@@ -124,6 +142,9 @@ def recommend_courses(
     prog = _resolve_programme(session, programme_id, programme_code)
     if prog is None:
         return []
+
+    # Deferred import: keeps torch out of processes that never embed (tests).
+    from .embedder import encode_query
 
     qvec = encode_query(query).tolist()
 
@@ -158,7 +179,8 @@ def recommend_courses(
     # Raise HNSW ef_search for this transaction so the post-index elective filter
     # doesn't starve the pool (otherwise the default silently caps recall).
     session.execute(text(f"SET LOCAL hnsw.ef_search = {int(HNSW_EF_SEARCH)}"))
-    rows = session.execute(stmt, {"qvec": qvec}).all()
+    with time_stage("search_ms"):
+        rows = session.execute(stmt, {"qvec": qvec}).all()
     if not rows:
         return []
 
@@ -189,7 +211,7 @@ def recommend_courses(
         r = d["row"]
         doc = " ".join(p for p in (r.name_hr, r.name_en, r.outcomes, r.syllabus) if p)
         pure = d["sim"]
-        if not (pure >= SEMANTIC_ONLY_FLOOR or (lexical_overlap(query, doc) > 0.0 and pure >= BASE_FLOOR)):
+        if not passes_relevance_gate(pure, lexical_overlap(query, doc)):
             continue
         title = " ".join(p for p in (r.name_hr, r.name_en) if p)
         d["doc"] = doc
@@ -200,6 +222,9 @@ def recommend_courses(
     if not ranked:
         return []
 
+    profiles_by_course = _profiles_offering_bulk(
+        session, [d["row"].id for d in ranked], prog.level
+    )
     results: list[CourseRecommendation] = []
     for d in ranked:
         r = d["row"]
@@ -218,7 +243,7 @@ def recommend_courses(
                 # The hybrid score (cosine + title nudge) is what we rank on, so
                 # display it too — the meter then always descends with rank.
                 score=round(d["hybrid"], 4),
-                profiles=_profiles_offering(session, r.id, prog.level),
+                profiles=profiles_by_course.get(r.id, []),
                 outcomes_snippet=_snippet(r.outcomes),
                 matched_keywords=matched,
                 explanation=_explanation(r.ects, disp_sem, matched),

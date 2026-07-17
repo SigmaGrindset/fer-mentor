@@ -24,7 +24,7 @@ export function useRecommend() {
 export function useMentor(id: number | undefined) {
   return useQuery({
     queryKey: ['mentor', id],
-    queryFn: () => getMentor(id as number),
+    queryFn: ({ signal }) => getMentor(id as number, signal),
     enabled: typeof id === 'number' && !Number.isNaN(id),
   })
 }
@@ -38,7 +38,7 @@ export function useMentorsDetails(ids: number[]) {
   return useQueries({
     queries: ids.map((id) => ({
       queryKey: ['mentor', id],
-      queryFn: () => getMentor(id),
+      queryFn: ({ signal }: { signal: AbortSignal }) => getMentor(id, signal),
     })),
   })
 }
@@ -47,7 +47,7 @@ export function useMentorsDetails(ids: number[]) {
 export function useSimilarMentors(id: number | undefined, limit = 6) {
   return useQuery({
     queryKey: ['similar-mentors', id, limit],
-    queryFn: () => getSimilarMentors(id as number, limit),
+    queryFn: ({ signal }) => getSimilarMentors(id as number, limit, signal),
     enabled: typeof id === 'number' && !Number.isNaN(id),
     staleTime: 1000 * 60 * 60, // static between re-ingests; backend caches too
   })
@@ -65,8 +65,8 @@ export function useMentorListInfinite(
   const sort = filters.sort ?? null
   return useInfiniteQuery({
     queryKey: ['mentors', zavod, q, sort],
-    queryFn: ({ pageParam }) =>
-      listMentors({ zavod, q, sort, limit: MENTOR_PAGE_SIZE, offset: pageParam }),
+    queryFn: ({ pageParam, signal }) =>
+      listMentors({ zavod, q, sort, limit: MENTOR_PAGE_SIZE, offset: pageParam }, signal),
     initialPageParam: 0,
     getNextPageParam: (lastPage, allPages) => {
       const loaded = allPages.reduce((n, p) => n + p.mentors.length, 0)

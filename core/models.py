@@ -23,7 +23,7 @@ from sqlalchemy import (
     UniqueConstraint,
     func,
 )
-from sqlalchemy.dialects.postgresql import ARRAY
+from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .config import settings
@@ -215,3 +215,30 @@ class CourseEmbedding(Base):
     embedding: Mapped[list[float]] = mapped_column(Vector(settings.embedding_dim))
 
     course: Mapped["Course"] = relationship(back_populates="embedding")
+
+
+class IngestRun(Base):
+    """Metadata of one ingestion/embedding run — who ran, when, with what yield.
+
+    Written by the scripts in `scripts/` (via `core.ingest_log.ingest_run`);
+    read by `GET /api/meta` so data freshness is visible from outside.
+    """
+
+    __tablename__ = "ingest_runs"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    # 'schedule' | 'repo' | 'courses' | 'thesis_embeddings' | 'course_embeddings'
+    source: Mapped[str] = mapped_column(String(32), index=True)
+    started_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # 'running' | 'ok' | 'failed'
+    status: Mapped[str] = mapped_column(String(16), default="running")
+    records_parsed: Mapped[int] = mapped_column(Integer, default=0)
+    records_upserted: Mapped[int] = mapped_column(Integer, default=0)
+    records_rejected: Mapped[int] = mapped_column(Integer, default=0)
+    # Validation warnings (capped list of strings; one per rejected/odd row).
+    warnings: Mapped[list | None] = mapped_column(JSONB)
+    # Exception repr when status == 'failed'.
+    error: Mapped[str | None] = mapped_column(Text)

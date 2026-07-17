@@ -17,10 +17,10 @@ from sqlalchemy import bindparam, select, text
 from sqlalchemy.orm import Session
 
 from core.links import thesis_url
+from core.metrics import time_stage
 from core.models import Mentor, Thesis, ThesisEmbedding
 from core.schemas import EvidenceThesis, MentorRecommendation
 
-from .embedder import encode_query
 from .textmatch import lexical_overlap, matched_keywords
 
 # --------------------------------------------------------------------------- #
@@ -139,6 +139,11 @@ def recommend(
     Returns:
         Up to `top_k` MentorRecommendation objects, sorted by score desc.
     """
+    # Imported here, not at module level: pulling in the embedder means loading
+    # torch, which tests (and anything else that only needs the pure scoring
+    # helpers) should not pay for.
+    from .embedder import encode_query
+
     qvec = encode_query(query).tolist()
     now_year = datetime.now().year
 
@@ -177,7 +182,8 @@ def recommend(
     # Raise HNSW ef_search for this transaction so the larger pool is backed by a
     # matching exploration budget (otherwise the default silently caps recall).
     session.execute(text(f"SET LOCAL hnsw.ef_search = {int(HNSW_EF_SEARCH)}"))
-    rows = session.execute(stmt, {"qvec": qvec}).all()
+    with time_stage("search_ms"):
+        rows = session.execute(stmt, {"qvec": qvec}).all()
     if not rows:
         return []
 
@@ -210,10 +216,11 @@ def recommend(
 
     # ----- 4) Hydrate mentors + current-year topics in bulk ------------------
     mentor_ids = [mid for _, mid, _ in scored]
-    mentors = {
-        m.id: m
-        for m in session.scalars(select(Mentor).where(Mentor.id.in_(mentor_ids))).all()
-    }
+    with time_stage("db_ms"):
+        mentors = {
+            m.id: m
+            for m in session.scalars(select(Mentor).where(Mentor.id.in_(mentor_ids))).all()
+        }
     current_topics: dict[int, list[str]] = {mid: [] for mid in mentor_ids}
     if mentor_ids:
         # Same type filter as the search: a završni student shouldn't be shown
@@ -225,7 +232,9 @@ def recommend(
         )
         if thesis_type:
             topics_stmt = topics_stmt.where(Thesis.thesis_type == thesis_type)
-        for tid_mentor, title_hr, title_en in session.execute(topics_stmt).all():
+        with time_stage("db_ms"):
+            topic_rows = session.execute(topics_stmt).all()
+        for tid_mentor, title_hr, title_en in topic_rows:
             title = (title_hr or title_en or "").strip()
             if title:
                 current_topics[tid_mentor].append(title)

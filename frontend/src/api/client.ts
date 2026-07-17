@@ -44,10 +44,15 @@ export class ApiError extends Error {
   }
 }
 
+/** Request timeout. Generous because a cold HF Space can take ~20 s to wake. */
+const TIMEOUT_MS = 30_000
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const timeout = AbortSignal.timeout(TIMEOUT_MS)
   const res = await fetch(`${BASE_URL}${path}`, {
     headers: { 'Content-Type': 'application/json', ...(init?.headers ?? {}) },
     ...init,
+    signal: init?.signal ? AbortSignal.any([timeout, init.signal]) : timeout,
   })
   if (!res.ok) {
     let detail = res.statusText
@@ -70,7 +75,7 @@ export async function recommend(req: RecommendRequest): Promise<RecommendRespons
   })
 }
 
-export async function getMentor(id: number): Promise<MentorDetail> {
+export async function getMentor(id: number, signal?: AbortSignal): Promise<MentorDetail> {
   if (!USING_REAL_API) {
     try {
       return await mockGetMentor(id)
@@ -79,10 +84,14 @@ export async function getMentor(id: number): Promise<MentorDetail> {
       throw e
     }
   }
-  return request<MentorDetail>(`/api/mentors/${id}`)
+  return request<MentorDetail>(`/api/mentors/${id}`, { signal })
 }
 
-export async function getSimilarMentors(id: number, limit = 6): Promise<SimilarMentor[]> {
+export async function getSimilarMentors(
+  id: number,
+  limit = 6,
+  signal?: AbortSignal,
+): Promise<SimilarMentor[]> {
   if (!USING_REAL_API) {
     try {
       return await mockGetSimilarMentors(id, limit)
@@ -91,7 +100,7 @@ export async function getSimilarMentors(id: number, limit = 6): Promise<SimilarM
       throw e
     }
   }
-  return request<SimilarMentor[]>(`/api/mentors/${id}/similar?limit=${limit}`)
+  return request<SimilarMentor[]>(`/api/mentors/${id}/similar?limit=${limit}`, { signal })
 }
 
 export async function listMentors(params: {
@@ -101,7 +110,7 @@ export async function listMentors(params: {
   sort?: MentorSort | null
   limit?: number
   offset?: number
-} = {}): Promise<MentorListResponse> {
+} = {}, signal?: AbortSignal): Promise<MentorListResponse> {
   if (!USING_REAL_API) return mockListMentors(params)
   const qs = new URLSearchParams()
   if (params.zavod) qs.set('zavod', params.zavod)
@@ -111,7 +120,7 @@ export async function listMentors(params: {
   if (params.limit != null) qs.set('limit', String(params.limit))
   if (params.offset != null) qs.set('offset', String(params.offset))
   const suffix = qs.toString() ? `?${qs.toString()}` : ''
-  return request<MentorListResponse>(`/api/mentors${suffix}`)
+  return request<MentorListResponse>(`/api/mentors${suffix}`, { signal })
 }
 
 export async function listZavodi(): Promise<ZavodOut[]> {

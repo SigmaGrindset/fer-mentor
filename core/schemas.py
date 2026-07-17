@@ -5,6 +5,7 @@ backend agent implements the endpoints.
 """
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Literal
 
 from pydantic import BaseModel, Field, model_validator
@@ -34,10 +35,10 @@ class MentorRecommendation(BaseModel):
 
 
 class RecommendRequest(BaseModel):
-    query: str = Field(min_length=1)
+    query: str = Field(min_length=1, max_length=500)
     top_k: int = Field(default=10, ge=1, le=50)
-    zavod: str | None = None
-    field: str | None = None
+    zavod: str | None = Field(default=None, max_length=100)
+    field: str | None = Field(default=None, max_length=200)
     # Hard filter: only theses of this type are searched and shown as evidence.
     # None = all types (incl. doktorski, which the UI doesn't offer).
     thesis_type: Literal["zavrsni", "diplomski"] | None = None
@@ -97,6 +98,23 @@ class HealthResponse(BaseModel):
     status: str = "ok"
 
 
+class IngestSourceMeta(BaseModel):
+    """Last successful ingestion run for one data source."""
+
+    source: str  # 'schedule' | 'repo' | 'courses' | '*_embeddings'
+    finished_at: datetime | None = None
+    records_parsed: int = 0
+    records_upserted: int = 0
+    records_rejected: int = 0
+    n_warnings: int = 0
+
+
+class MetaResponse(BaseModel):
+    """Data-freshness overview (GET /api/meta)."""
+
+    sources: list[IngestSourceMeta] = Field(default_factory=list)
+
+
 # --------------------------------------------------------------------------- #
 # Feature #2 — elective course recommender
 # --------------------------------------------------------------------------- #
@@ -132,9 +150,9 @@ class CourseRecommendation(BaseModel):
 
 
 class CourseRecommendRequest(BaseModel):
-    query: str = Field(min_length=1)
+    query: str = Field(min_length=1, max_length=500)
     # Exactly one of programme_code / programme_id identifies the student context.
-    programme_code: str | None = None
+    programme_code: str | None = Field(default=None, max_length=50)
     programme_id: int | None = None
     semester: int | None = None  # optional filter; None = all eligible semesters
     top_k: int = Field(default=12, ge=1, le=50)

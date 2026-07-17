@@ -17,6 +17,7 @@ from sqlalchemy import bindparam, func, select
 from sqlalchemy.orm import Session
 
 from core.config import settings
+from core.metrics import record, time_stage
 from core.models import Mentor, Thesis, ThesisEmbedding
 from core.schemas import SimilarMentor
 
@@ -49,16 +50,19 @@ def similar_mentors(
     key = (mentor_id, top_k)
     cached = _cache.get(key)
     if cached is not None:
+        record("cache", "hit")
         return cached
+    record("cache", "miss")
 
     # ----- 1) Target mentor's centroid ---------------------------------------
     # Fetched separately (not one CTE) so a mentor with no embedded theses gets
     # an honest empty result instead of NULL-distance rows in arbitrary order.
-    target = session.scalar(
-        select(_centroid())
-        .join(Thesis, Thesis.id == ThesisEmbedding.thesis_id)
-        .where(Thesis.mentor_id == mentor_id)
-    )
+    with time_stage("search_ms"):
+        target = session.scalar(
+            select(_centroid())
+            .join(Thesis, Thesis.id == ThesisEmbedding.thesis_id)
+            .where(Thesis.mentor_id == mentor_id)
+        )
     if target is None:
         _cache[key] = []
         return []
@@ -68,23 +72,25 @@ def similar_mentors(
     # A GROUP BY aggregate can't use the HNSW index; this is one sequential pass
     # over the embeddings, paid once per (mentor, top_k) thanks to the cache.
     dist = _centroid().cosine_distance(bindparam("cvec"))
-    rows = session.execute(
-        select(Thesis.mentor_id, (1 - dist).label("similarity"))
-        .join(ThesisEmbedding, ThesisEmbedding.thesis_id == Thesis.id)
-        .where(Thesis.mentor_id != mentor_id)
-        .group_by(Thesis.mentor_id)
-        .order_by(dist)
-        .limit(top_k),
-        {"cvec": cvec},
-    ).all()
+    with time_stage("search_ms"):
+        rows = session.execute(
+            select(Thesis.mentor_id, (1 - dist).label("similarity"))
+            .join(ThesisEmbedding, ThesisEmbedding.thesis_id == Thesis.id)
+            .where(Thesis.mentor_id != mentor_id)
+            .group_by(Thesis.mentor_id)
+            .order_by(dist)
+            .limit(top_k),
+            {"cvec": cvec},
+        ).all()
 
     # ----- 3) Hydrate mentors in bulk, preserving rank order -----------------
-    mentors = {
-        m.id: m
-        for m in session.scalars(
-            select(Mentor).where(Mentor.id.in_([r.mentor_id for r in rows]))
-        ).all()
-    }
+    with time_stage("db_ms"):
+        mentors = {
+            m.id: m
+            for m in session.scalars(
+                select(Mentor).where(Mentor.id.in_([r.mentor_id for r in rows]))
+            ).all()
+        }
     results = [
         SimilarMentor(
             id=m.id,

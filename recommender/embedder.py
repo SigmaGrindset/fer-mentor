@@ -24,6 +24,7 @@ import torch
 from sentence_transformers import SentenceTransformer
 
 from core.config import settings
+from core.metrics import time_stage
 
 os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
 
@@ -96,4 +97,5 @@ def encode_query(text: str) -> np.ndarray:
     payload = [text]
     if _needs_e5_prefix(settings.embedding_model):
         payload = _prefix(payload, "query: ")
-    return _encode(payload, batch_size=1)[0]
+    with time_stage("embed_ms"):
+        return _encode(payload, batch_size=1)[0]
