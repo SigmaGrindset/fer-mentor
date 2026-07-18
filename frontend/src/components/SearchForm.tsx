@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { QUERY_MAX } from '../lib/limits'
+import { CharCounter } from './CharCounter'
 import { ZavodSelect } from './ZavodSelect'
 
 export interface SearchValues {
@@ -64,9 +66,11 @@ export function SearchForm({
           if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') submit(e)
         }}
         rows={3}
+        maxLength={QUERY_MAX}
         placeholder="npr. razvoj web-aplikacije za vizualizaciju podataka u stvarnom vremenu…"
         className="mt-3 w-full resize-y border-0 border-b border-line bg-transparent px-0 py-2 font-serif text-xl leading-snug text-ink placeholder:font-sans placeholder:text-base placeholder:text-muted/70 focus:border-brand focus:outline-none focus:ring-0"
       />
+      <CharCounter length={query.length} />
 
       <div className="mt-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-4 sm:gap-y-3">

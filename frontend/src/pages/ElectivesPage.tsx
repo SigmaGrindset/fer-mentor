@@ -7,10 +7,12 @@ import { RecentSearches } from '../components/RecentSearches'
 import { Select, type SelectGroup, type SelectOption } from '../components/Select'
 import { ResultListSkeleton } from '../components/Skeleton'
 import { LoadingStatus, StateMessage } from '../components/StateMessage'
+import { CharCounter } from '../components/CharCounter'
 import { useDocumentTitle } from '../hooks/useDocumentTitle'
 import { RECENT_ELECTIVES, useRecentSearches } from '../hooks/useRecentSearches'
 import { useSlowRequest } from '../hooks/useSlowRequest'
 import { pluralRezultati } from '../lib/format'
+import { QUERY_MAX } from '../lib/limits'
 
 type Level = 'preddiplomski' | 'diplomski'
 
@@ -238,9 +240,11 @@ export function ElectivesPage() {
               if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') submit(e)
             }}
             rows={3}
+            maxLength={QUERY_MAX}
             placeholder="npr. zanima me umjetna inteligencija i obrada slike za medicinske primjene…"
             className="mt-3 w-full resize-y border-0 border-b border-line bg-transparent px-0 py-2 font-serif text-xl leading-snug text-ink placeholder:font-sans placeholder:text-base placeholder:text-muted/70 focus:border-brand focus:outline-none focus:ring-0"
           />
+          <CharCounter length={query.length} />
         </div>
 
         <div className="mt-5 flex justify-end">

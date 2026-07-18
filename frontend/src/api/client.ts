@@ -50,21 +50,45 @@ const TIMEOUT_MS = 30_000
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const timeout = AbortSignal.timeout(TIMEOUT_MS)
-  const res = await fetch(`${BASE_URL}${path}`, {
-    headers: { 'Content-Type': 'application/json', ...(init?.headers ?? {}) },
-    ...init,
-    signal: init?.signal ? AbortSignal.any([timeout, init.signal]) : timeout,
-  })
+  let res: Response
+  try {
+    res = await fetch(`${BASE_URL}${path}`, {
+      headers: { 'Content-Type': 'application/json', ...(init?.headers ?? {}) },
+      ...init,
+      signal: init?.signal ? AbortSignal.any([timeout, init.signal]) : timeout,
+    })
+  } catch (e) {
+    // Caller-driven aborts (e.g. component unmount) must propagate untouched.
+    if (init?.signal?.aborted) throw e
+    if (e instanceof DOMException && e.name === 'TimeoutError') {
+      throw new ApiError(
+        'Poslužitelj se ne javlja — vjerojatno se tek budi. Pokušaj ponovno za minutu.',
+        0,
+      )
+    }
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      throw new ApiError('Nema internetske veze. Provjeri mrežu i pokušaj ponovno.', 0)
+    }
+    throw new ApiError(
+      'Ne mogu se spojiti na poslužitelj. Pokušaj ponovno za nekoliko trenutaka.',
+      0,
+    )
+  }
   if (!res.ok) {
-    let detail = res.statusText
+    let detail = ''
     try {
-      const body = (await res.json()) as { detail?: string }
-      if (body?.detail) detail = body.detail
+      const body = (await res.json()) as { detail?: unknown }
+      // FastAPI 422s carry an array of validation objects — only trust strings.
+      if (typeof body?.detail === 'string') detail = body.detail
     } catch {
       /* ignore non-JSON error bodies */
     }
     if (res.status === 429) detail = 'Previše upita — pričekaj minutu.'
-    throw new ApiError(detail || `HTTP ${res.status}`, res.status)
+    else if (res.status === 422 && !detail)
+      detail = 'Upit nije prošao provjeru — opis smije imati najviše 500 znakova.'
+    else if (res.status >= 500)
+      detail = 'Poslužitelj je javio pogrešku. Pokušaj ponovno za nekoliko trenutaka.'
+    throw new ApiError(detail || res.statusText || `HTTP ${res.status}`, res.status)
   }
   return (await res.json()) as T
 }
