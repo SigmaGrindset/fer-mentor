@@ -8,7 +8,9 @@ from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 
 from core.config import settings
-from recommender.embedder import EncoderBusy
+# From core.errors, not recommender.embedder: the latter imports torch and
+# sentence-transformers at module level, which the app must not require.
+from core.errors import EncoderBusy
 
 from .observability import RequestLogMiddleware, setup_logging
 from .ratelimit import limiter, rate_limit_handler

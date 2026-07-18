@@ -24,7 +24,10 @@ import torch
 from sentence_transformers import SentenceTransformer
 
 from core.config import settings
+from core.errors import EncoderBusy
 from core.metrics import time_stage
+
+__all__ = ["EncoderBusy", "encode_passages", "encode_query", "get_model"]
 
 os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
 
@@ -50,10 +53,6 @@ _encode_slots = threading.Semaphore(_ENCODE_CONCURRENCY)
 # an abuser bypassing the per-IP limit): shed the request with a fast 503 the
 # client can retry, rather than let it sit in a queue past the browser timeout.
 _ENCODE_ACQUIRE_TIMEOUT = float(os.environ.get("ENCODE_ACQUIRE_TIMEOUT") or 20)
-
-
-class EncoderBusy(RuntimeError):
-    """No encode slot became free in time — the server is overloaded."""
 
 
 def _needs_e5_prefix(model_name: str) -> bool:

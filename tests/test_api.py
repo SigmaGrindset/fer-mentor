@@ -8,6 +8,7 @@ from __future__ import annotations
 import pytest
 
 import backend.app.routes as routes
+from core.errors import EncoderBusy
 from core.models import Mentor, Programme
 from core.schemas import (
     CourseRecommendation,
@@ -88,6 +89,33 @@ class TestRecommendContract:
         second = client.post("/api/recommend", json={"query": "duboko učenje"})
         assert first.status_code == second.status_code == 200
         assert first.json()["results"] == second.json()["results"]
+        assert len(calls) == 1
+
+
+class TestOverloadShedding:
+    def test_encoder_busy_becomes_503_with_retry_after(self, client, monkeypatch):
+        def busy(*a, **k):
+            raise EncoderBusy
+
+        monkeypatch.setattr(routes, "recommend", busy)
+        r = client.post("/api/recommend", json={"query": "gužva"})
+        assert r.status_code == 503
+        assert r.headers["Retry-After"] == "5"
+        assert r.json()["detail"]
+
+    def test_shed_request_is_not_cached(self, client, monkeypatch):
+        """A 503 must not poison the cache: the retry has to reach the
+        recommender, not replay the overload response."""
+        calls = []
+
+        def busy(*a, **k):
+            calls.append(1)
+            raise EncoderBusy
+
+        monkeypatch.setattr(routes, "recommend", busy)
+        assert client.post("/api/recommend", json={"query": "gužva"}).status_code == 503
+        monkeypatch.setattr(routes, "recommend", lambda *a, **k: [_recommendation()])
+        assert client.post("/api/recommend", json={"query": "gužva"}).status_code == 200
         assert len(calls) == 1
 
 
