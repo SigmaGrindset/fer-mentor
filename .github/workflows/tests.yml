@@ -50,5 +50,7 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci
       - run: npx playwright install --with-deps chromium
-      # Runs against the Vite dev server in mock mode (see playwright.config.ts).
+      # Starts its own Vite dev servers — mock mode for the desktop/mobile
+      # projects, real-API mode for the intercepted error-state project
+      # (see playwright.config.ts). No backend or database needed.
       - run: npx playwright test
