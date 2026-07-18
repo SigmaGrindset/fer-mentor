@@ -38,6 +38,23 @@ _MAX_CHARS = 6000
 _model: SentenceTransformer | None = None
 _lock = threading.Lock()
 
+# Bound how many query encodes run at once. On the 2-vCPU Space, unbounded
+# concurrent .encode() calls oversubscribe the CPU and every request slows ~Nx
+# (load test: throughput peaks at ~3 in-flight then collapses). This semaphore
+# makes surplus requests queue for a slot instead of thrashing, so tail latency
+# stays bounded. Default 2 (the measured throughput sweet spot); overridable.
+_ENCODE_CONCURRENCY = max(1, int(os.environ.get("ENCODE_CONCURRENCY") or 2))
+_encode_slots = threading.Semaphore(_ENCODE_CONCURRENCY)
+
+# If no slot frees up within this budget the server is overloaded (a burst, or
+# an abuser bypassing the per-IP limit): shed the request with a fast 503 the
+# client can retry, rather than let it sit in a queue past the browser timeout.
+_ENCODE_ACQUIRE_TIMEOUT = float(os.environ.get("ENCODE_ACQUIRE_TIMEOUT") or 20)
+
+
+class EncoderBusy(RuntimeError):
+    """No encode slot became free in time — the server is overloaded."""
+
 
 def _needs_e5_prefix(model_name: str) -> bool:
     name = model_name.lower()
@@ -97,5 +114,12 @@ def encode_query(text: str) -> np.ndarray:
     payload = [text]
     if _needs_e5_prefix(settings.embedding_model):
         payload = _prefix(payload, "query: ")
+    # Serialize past the concurrency bound so the CPU isn't oversubscribed; the
+    # wait for a slot is counted inside embed_ms (it is latency the user feels).
     with time_stage("embed_ms"):
-        return _encode(payload, batch_size=1)[0]
+        if not _encode_slots.acquire(timeout=_ENCODE_ACQUIRE_TIMEOUT):
+            raise EncoderBusy
+        try:
+            return _encode(payload, batch_size=1)[0]
+        finally:
+            _encode_slots.release()
