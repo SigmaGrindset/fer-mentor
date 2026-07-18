@@ -8,10 +8,13 @@ from __future__ import annotations
 import shutil
 from pathlib import Path
 
+import pytest
+
 from core.ingest_log import RunStats
 from ingestion.harvest_repo import iter_records, parse_record
 from ingestion.parse_courses import parse_programme
 from ingestion.parse_schedule import parse_file
+from scripts.ingest import prune_schedule
 
 from lxml import etree
 
@@ -113,3 +116,74 @@ class TestParseProgramme:
         assert stats.rejected == 1
         assert any("without /predmet/ link" in w for w in stats.warnings)
         assert any("transversal" in w for w in stats.warnings)
+
+
+class TestPruneSchedule:
+    """The schedule ext_id is a title hash, so edited titles re-hash into new
+    rows; pruning is what stops the old ones piling up as near-duplicates.
+
+    The suite runs without Postgres, so the session is faked — enough to pin
+    which rows get deleted and in what order.
+    """
+
+    class FakeQuery:
+        def __init__(self, session):
+            self._session = session
+
+        def filter(self, *_args):
+            return self
+
+        def delete(self, **_kwargs):
+            self._session.memberships_cleared = True
+            return 0
+
+    class FakeSession:
+        def __init__(self, rows):
+            self._rows = rows
+            self.deleted = []
+            self.memberships_cleared = False
+            self.flushed = False
+
+        def scalars(self, _stmt):
+            return self
+
+        def all(self):
+            return self._rows
+
+        def query(self, _model):
+            return TestPruneSchedule.FakeQuery(self)
+
+        def delete(self, row):
+            self.deleted.append(row)
+
+        def flush(self):
+            self.flushed = True
+
+    class Row:
+        def __init__(self, id_):
+            self.id = id_
+
+    def test_deletes_stale_rows_and_clears_memberships_first(self):
+        stale = [self.Row(7), self.Row(9)]
+        session = self.FakeSession(stale)
+
+        assert prune_schedule(session, {"live-a", "live-b"}) == 2
+        assert session.deleted == stale
+        # Memberships have no ON DELETE cascade, so they must go first.
+        assert session.memberships_cleared is True
+        assert session.flushed is True
+
+    def test_no_stale_rows_is_a_noop(self):
+        session = self.FakeSession([])
+
+        assert prune_schedule(session, {"live-a"}) == 0
+        assert session.deleted == []
+        assert session.memberships_cleared is False
+
+    def test_refuses_to_prune_on_an_empty_parse(self):
+        """A failed parse must never be read as "every defence was withdrawn"."""
+        session = self.FakeSession([self.Row(1)])
+
+        with pytest.raises(ValueError, match="produced 0 theses"):
+            prune_schedule(session, set())
+        assert session.deleted == []

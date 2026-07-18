@@ -4,6 +4,10 @@ Runs source A (schedule HTML) + source B (repo OAI-PMH), joins their mentors by
 canonical slug, and upserts everything into Postgres. Idempotent: re-running
 upserts on the (source, ext_id) unique constraint and the mentor slug.
 
+Schedule theses are additionally reconciled against the export: rows missing
+from the current HTML are pruned (see `prune_schedule`), so an upstream title
+edit replaces the old row instead of leaving a near-duplicate behind.
+
     python scripts/ingest.py                 # full run (A + B)
     python scripts/ingest.py --repo-limit 200
     python scripts/ingest.py --skip-repo     # schedule only
@@ -158,6 +162,42 @@ def upsert_schedule(
     return n
 
 
+def prune_schedule(session: Session, live_ext_ids: set[str]) -> int:
+    """Drop schedule theses that are no longer in the current HTML export.
+
+    The schedule `ext_id` is a hash of (smjer|student|title), so when a title is
+    edited upstream the row re-hashes: `upsert_schedule` inserts a *new* thesis
+    and the old one lingers as a near-duplicate. Reconciling against the export
+    keeps `source='schedule'` meaning "currently scheduled".
+
+    Only the schedule is pruned — the repository is an append-only archive, and
+    its OAI identifiers are stable, so a missing repo record means a harvest
+    problem rather than a withdrawn thesis.
+    """
+    if not live_ext_ids:
+        # An empty parse must never be read as "every defence was withdrawn".
+        raise ValueError("refusing to prune schedule: parse produced 0 theses")
+
+    stale = session.scalars(
+        select(Thesis).where(
+            Thesis.source == "schedule", Thesis.ext_id.not_in(live_ext_ids)
+        )
+    ).all()
+    if not stale:
+        return 0
+
+    stale_ids = [t.id for t in stale]
+    # No ON DELETE cascade in the schema: memberships must go first, while the
+    # embedding is cleared by the delete-orphan relationship on Thesis.
+    session.query(CommitteeMembership).filter(
+        CommitteeMembership.thesis_id.in_(stale_ids)
+    ).delete(synchronize_session=False)
+    for row in stale:
+        session.delete(row)
+    session.flush()
+    return len(stale_ids)
+
+
 def upsert_repo(
     session: Session,
     item: RepoThesis,
@@ -298,6 +338,15 @@ def run(
                 )
                 schedule_stats.upserted = n
                 print(f"[schedule] upserted {n} theses")
+
+                pruned = prune_schedule(
+                    session, {s.ext_id for s in schedule_items}
+                )
+                if pruned:
+                    schedule_stats.warn(
+                        f"pruned {pruned} schedule theses no longer in the export"
+                    )
+                    print(f"[schedule] pruned {pruned} stale theses")
 
             if repo_items:
                 seen_repo: set[str] = set()
