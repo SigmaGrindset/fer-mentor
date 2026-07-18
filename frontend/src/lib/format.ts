@@ -34,3 +34,12 @@ export const pluralMentori = (n: number) => plural(n, 'mentor', 'mentora', 'ment
 export function formatSimilarity(sim: number): string {
   return `${Math.round(sim * 100)}%`
 }
+
+/** ISO 8601 timestamp -> Croatian long date, e.g. "18. srpnja 2026." */
+export function formatDate(iso: string): string {
+  return new Intl.DateTimeFormat('hr-HR', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  }).format(new Date(iso))
+}

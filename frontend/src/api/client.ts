@@ -24,6 +24,7 @@ import type {
   MentorDetail,
   MentorListResponse,
   MentorSort,
+  MetaResponse,
   ProgrammeCatalog,
   RecommendRequest,
   RecommendResponse,
@@ -62,6 +63,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     } catch {
       /* ignore non-JSON error bodies */
     }
+    if (res.status === 429) detail = 'Previše upita — pričekaj minutu.'
     throw new ApiError(detail || `HTTP ${res.status}`, res.status)
   }
   return (await res.json()) as T
@@ -126,6 +128,11 @@ export async function listMentors(params: {
 export async function listZavodi(): Promise<ZavodOut[]> {
   if (!USING_REAL_API) return mockListZavodi()
   return request<ZavodOut[]>('/api/zavodi')
+}
+
+/** Last successful ingest per source. Only meaningful against a real backend. */
+export async function getMeta(): Promise<MetaResponse> {
+  return request<MetaResponse>('/api/meta')
 }
 
 export async function health(): Promise<HealthResponse> {

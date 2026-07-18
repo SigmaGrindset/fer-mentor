@@ -1,8 +1,9 @@
 import type { ReactNode } from 'react'
 import { Link, NavLink } from 'react-router-dom'
-import { USING_REAL_API } from '../api'
+import { USING_REAL_API, useMeta } from '../api'
 import { useSaved } from '../hooks/useSaved'
 import { useTheme } from '../hooks/useTheme'
+import { formatDate } from '../lib/format'
 
 function navClass({ isActive }: { isActive: boolean }) {
   return `relative whitespace-nowrap py-1 text-[0.8rem] font-semibold uppercase tracking-[0.12em] transition-colors ${
@@ -49,6 +50,17 @@ function SavedNavLink() {
       )}
     </NavLink>
   )
+}
+
+/** "Podaci ažurirani: …" from the newest successful ingest run; renders nothing until known. */
+function DataFreshness() {
+  const { data } = useMeta()
+  const timestamps = (data?.sources ?? [])
+    .map((s) => s.finished_at)
+    .filter((t): t is string => t != null)
+  if (timestamps.length === 0) return null
+  const newest = timestamps.reduce((a, b) => (Date.parse(a) >= Date.parse(b) ? a : b))
+  return <span>Podaci ažurirani: {formatDate(newest)}</span>
 }
 
 function mobileNavClass({ isActive }: { isActive: boolean }) {
@@ -177,12 +189,15 @@ export function Layout({ children }: { children: ReactNode }) {
               preporuka mentora za završni i diplomski rad
             </span>
           </span>
-          <span>
+          <span className="flex flex-col items-start gap-1 sm:items-end">
             {USING_REAL_API ? (
-              <span className="inline-flex items-center gap-1.5">
-                <span className="h-1.5 w-1.5 rounded-full bg-brand" />
-                Povezano s repozitorijem FER-a
-              </span>
+              <>
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="h-1.5 w-1.5 rounded-full bg-brand" />
+                  Povezano s repozitorijem FER-a
+                </span>
+                <DataFreshness />
+              </>
             ) : (
               <span className="inline-flex items-center gap-1.5">
                 <span className="h-1.5 w-1.5 rounded-full bg-ochre" />

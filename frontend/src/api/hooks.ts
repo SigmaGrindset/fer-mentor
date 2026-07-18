@@ -1,7 +1,9 @@
 /** TanStack Query hooks wrapping the API client. */
 import { useInfiniteQuery, useMutation, useQueries, useQuery } from '@tanstack/react-query'
 import {
+  USING_REAL_API,
   getMentor,
+  getMeta,
   getProgrammes,
   getSimilarMentors,
   listMentors,
@@ -80,6 +82,16 @@ export function useZavodi() {
   return useQuery({
     queryKey: ['zavodi'],
     queryFn: () => listZavodi(),
+    staleTime: 1000 * 60 * 60,
+  })
+}
+
+/** Data freshness for the footer; the mock layer has no ingest runs. */
+export function useMeta() {
+  return useQuery({
+    queryKey: ['meta'],
+    queryFn: () => getMeta(),
+    enabled: USING_REAL_API,
     staleTime: 1000 * 60 * 60,
   })
 }

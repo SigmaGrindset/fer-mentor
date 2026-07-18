@@ -103,6 +103,22 @@ export interface HealthResponse {
   status: string
 }
 
+/** Last successful ingest run for one data source. */
+export interface IngestSourceMeta {
+  /** 'schedule' | 'repo' | 'courses' | 'thesis_embeddings' | 'course_embeddings' */
+  source: string
+  /** ISO 8601 with offset; null while a run is in progress */
+  finished_at?: string | null
+  records_parsed: number
+  records_upserted: number
+  records_rejected: number
+  n_warnings: number
+}
+
+export interface MetaResponse {
+  sources: IngestSourceMeta[]
+}
+
 /* ------------------------------------------------------------------ *
  * Feature #2 — elective course recommender
  * ------------------------------------------------------------------ */
