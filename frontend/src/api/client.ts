@@ -48,7 +48,13 @@ export class ApiError extends Error {
 /** Request timeout. Generous because a cold HF Space can take ~20 s to wake. */
 const TIMEOUT_MS = 30_000
 
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
+/**
+ * The first request after the Space restarts loads bge-m3 (~12 s) and can take
+ * longer than TIMEOUT_MS, and a burst can shed a request with 503. Both clear on
+ * a second try against the now-warm/less-busy server, so retry those once. Never
+ * retry a caller-driven abort, a 429 (rate limit) or a 4xx (bad input).
+ */
+async function attempt<T>(path: string, init: RequestInit | undefined): Promise<T> {
   const timeout = AbortSignal.timeout(TIMEOUT_MS)
   let res: Response
   try {
@@ -86,11 +92,30 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     if (res.status === 429) detail = 'Previše upita — pričekaj minutu.'
     else if (res.status === 422 && !detail)
       detail = 'Upit nije prošao provjeru — opis smije imati najviše 500 znakova.'
+    else if (res.status === 503 && !detail)
+      detail = 'Trenutačno je gužva na poslužitelju. Pokušaj ponovno za koji trenutak.'
     else if (res.status >= 500)
       detail = 'Poslužitelj je javio pogrešku. Pokušaj ponovno za nekoliko trenutaka.'
     throw new ApiError(detail || res.statusText || `HTTP ${res.status}`, res.status)
   }
   return (await res.json()) as T
+}
+
+/** A cold-start timeout (status 0) or a load-shed 503 is worth one retry. */
+function isRetryable(e: unknown): boolean {
+  return e instanceof ApiError && (e.status === 0 || e.status === 503)
+}
+
+async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  try {
+    return await attempt<T>(path, init)
+  } catch (e) {
+    if (init?.signal?.aborted || !isRetryable(e)) throw e
+    // Brief pause so a waking/busy Space has a moment before the second try.
+    await new Promise((r) => setTimeout(r, 1500))
+    if (init?.signal?.aborted) throw e
+    return attempt<T>(path, init)
+  }
 }
 
 export async function recommend(req: RecommendRequest): Promise<RecommendResponse> {
