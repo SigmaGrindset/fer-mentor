@@ -45,12 +45,7 @@ export function MentorCard({
               >
                 {mentor.full_name}
               </Link>
-              <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
-                {mentor.zavod_code && (
-                  <span className="font-mono text-[0.72rem] uppercase tracking-[0.1em] text-brand">
-                    {mentor.zavod_code}
-                  </span>
-                )}
+              <div className="mt-1.5">
                 <span className="text-xs text-muted">{pluralRadovi(mentor.n_theses)}</span>
               </div>
             </div>

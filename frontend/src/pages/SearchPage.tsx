@@ -19,7 +19,6 @@ export function SearchPage() {
   const [params, setParams] = useSearchParams()
   const [submittedQuery, setSubmittedQuery] = useState<string | null>(null)
   const initialQuery = params.get('q') ?? ''
-  const initialZavod = params.get('zavod') ?? ''
   // Sanitize: a hand-edited ?tip= falls back to "all" instead of a 422.
   const rawTip = params.get('tip') ?? ''
   const initialThesisType = rawTip === 'zavrsni' || rawTip === 'diplomski' ? rawTip : ''
@@ -47,13 +46,12 @@ export function SearchPage() {
     }
   }, [recommend.isPending])
 
-  function runSearch(query: string, zavod: string, thesisType: string) {
+  function runSearch(query: string, thesisType: string) {
     lastSearched.current = query
     setSubmittedQuery(query)
     add(query)
     recommend.mutate({
       query,
-      zavod: zavod || null,
       thesis_type:
         thesisType === 'zavrsni' || thesisType === 'diplomski' ? thesisType : null,
       top_k: 10,
@@ -63,14 +61,13 @@ export function SearchPage() {
   function handleSubmit(values: SearchValues) {
     const next: Record<string, string> = {}
     if (values.query) next.q = values.query
-    if (values.zavod) next.zavod = values.zavod
     if (values.thesisType) next.tip = values.thesisType
     setParams(next, { replace: true })
-    runSearch(values.query, values.zavod, values.thesisType)
+    runSearch(values.query, values.thesisType)
   }
 
   function pickRecent(query: string) {
-    handleSubmit({ query, zavod: initialZavod, thesisType: initialThesisType })
+    handleSubmit({ query, thesisType: initialThesisType })
   }
 
   // Auto-run a search when opened with ?q= (shareable/bookmarkable links).
@@ -79,7 +76,7 @@ export function SearchPage() {
   useEffect(() => {
     const q = initialQuery.trim()
     if (!q || lastSearched.current === q) return
-    const id = setTimeout(() => runSearch(q, initialZavod, initialThesisType), 0)
+    const id = setTimeout(() => runSearch(q, initialThesisType), 0)
     return () => clearTimeout(id)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialQuery])
@@ -103,9 +100,8 @@ export function SearchPage() {
       </section>
 
       <SearchForm
-        key={`${initialQuery}|${initialZavod}|${initialThesisType}`}
+        key={`${initialQuery}|${initialThesisType}`}
         initialQuery={initialQuery}
-        initialZavod={initialZavod}
         initialThesisType={initialThesisType}
         pending={recommend.isPending}
         onSubmit={handleSubmit}
@@ -134,8 +130,7 @@ export function SearchPage() {
             <button
               type="button"
               onClick={() =>
-                submittedQuery &&
-                runSearch(submittedQuery, initialZavod, initialThesisType)
+                submittedQuery && runSearch(submittedQuery, initialThesisType)
               }
               className="rounded bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700"
             >

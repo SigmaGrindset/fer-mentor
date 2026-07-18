@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { Badge } from '../components/Badge'
 import { BookmarkButton } from '../components/BookmarkButton'
 import { MentorCompare } from '../components/MentorCompare'
 import { StateMessage } from '../components/StateMessage'
@@ -103,8 +102,7 @@ export function SavedPage() {
                       >
                         {m.full_name}
                       </Link>
-                      <div className="mt-1 flex flex-wrap items-center gap-2">
-                        {m.zavod_code && <Badge variant="zavod">{m.zavod_code}</Badge>}
+                      <div className="mt-1">
                         <span className="text-xs text-muted">{pluralRadovi(m.n_theses)}</span>
                       </div>
                     </div>

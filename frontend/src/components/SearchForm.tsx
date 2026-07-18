@@ -1,11 +1,9 @@
 import { useState } from 'react'
 import { QUERY_MAX } from '../lib/limits'
 import { CharCounter } from './CharCounter'
-import { ZavodSelect } from './ZavodSelect'
 
 export interface SearchValues {
   query: string
-  zavod: string
   /** '' = all types, otherwise 'zavrsni' | 'diplomski' */
   thesisType: string
 }
@@ -25,26 +23,23 @@ const EXAMPLES = [
 
 export function SearchForm({
   initialQuery = '',
-  initialZavod = '',
   initialThesisType = '',
   pending,
   onSubmit,
 }: {
   initialQuery?: string
-  initialZavod?: string
   initialThesisType?: string
   pending: boolean
   onSubmit: (values: SearchValues) => void
 }) {
   const [query, setQuery] = useState(initialQuery)
-  const [zavod, setZavod] = useState(initialZavod)
   const [thesisType, setThesisType] = useState(initialThesisType)
 
   function submit(e: React.FormEvent) {
     e.preventDefault()
     const trimmed = query.trim()
     if (!trimmed) return
-    onSubmit({ query: trimmed, zavod, thesisType })
+    onSubmit({ query: trimmed, thesisType })
   }
 
   return (
@@ -73,38 +68,29 @@ export function SearchForm({
       <CharCounter length={query.length} />
 
       <div className="mt-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-4 sm:gap-y-3">
-          <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-2">
-            <label htmlFor="zavod" className="text-sm text-muted">
-              Zavod
-            </label>
-            <ZavodSelect value={zavod} onChange={setZavod} className="w-full sm:w-52" />
-          </div>
-
-          <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-2">
-            <span className="text-sm text-muted">Vrsta rada</span>
-            <div
-              role="group"
-              aria-label="Vrsta rada"
-              className="flex shrink-0 rounded border border-line bg-surface p-0.5"
-            >
-              {TYPE_OPTIONS.map((opt) => {
-                const active = thesisType === opt.value
-                return (
-                  <button
-                    key={opt.value || 'all'}
-                    type="button"
-                    onClick={() => setThesisType(opt.value)}
-                    aria-pressed={active}
-                    className={`flex-1 whitespace-nowrap rounded px-3 py-2 text-xs font-semibold transition-colors sm:flex-none ${
-                      active ? 'bg-brand text-white' : 'text-muted hover:text-ink'
-                    }`}
-                  >
-                    {opt.label}
-                  </button>
-                )
-              })}
-            </div>
+        <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-2">
+          <span className="text-sm text-muted">Vrsta rada</span>
+          <div
+            role="group"
+            aria-label="Vrsta rada"
+            className="flex shrink-0 rounded border border-line bg-surface p-0.5"
+          >
+            {TYPE_OPTIONS.map((opt) => {
+              const active = thesisType === opt.value
+              return (
+                <button
+                  key={opt.value || 'all'}
+                  type="button"
+                  onClick={() => setThesisType(opt.value)}
+                  aria-pressed={active}
+                  className={`flex-1 whitespace-nowrap rounded px-3 py-2 text-xs font-semibold transition-colors sm:flex-none ${
+                    active ? 'bg-brand text-white' : 'text-muted hover:text-ink'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              )
+            })}
           </div>
         </div>
 

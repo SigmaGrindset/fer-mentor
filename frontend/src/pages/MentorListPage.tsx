@@ -4,7 +4,6 @@ import { useMentorListInfinite } from '../api'
 import { MentorTile } from '../components/MentorTile'
 import { MentorListSkeleton } from '../components/Skeleton'
 import { LoadingStatus, StateMessage } from '../components/StateMessage'
-import { ZavodSelect } from '../components/ZavodSelect'
 import { useDocumentTitle } from '../hooks/useDocumentTitle'
 import { useSlowRequest } from '../hooks/useSlowRequest'
 import { backState } from '../lib/backlink'
@@ -21,7 +20,6 @@ export function MentorListPage() {
   // Filters live in the URL so results are shareable/bookmarkable.
   const [params, setParams] = useSearchParams()
   const back = backState(useLocation())
-  const zavod = params.get('zavod') ?? ''
   const urlQ = params.get('q') ?? ''
   // Anything unrecognized falls back to the default ordering.
   const sort = params.get('sort') === 'name' ? 'name' : null
@@ -55,12 +53,12 @@ export function MentorListPage() {
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-  } = useMentorListInfinite({ zavod: zavod || null, q: urlQ || null, sort })
+  } = useMentorListInfinite({ q: urlQ || null, sort })
   const slow = useSlowRequest(isPending)
 
   const mentors = useMemo(() => data?.pages.flatMap((p) => p.mentors) ?? [], [data])
   const total = data?.pages[0]?.total ?? 0
-  const filtered = Boolean(zavod || urlQ)
+  const filtered = Boolean(urlQ)
 
   return (
     <div className="space-y-8">
@@ -72,8 +70,8 @@ export function MentorListPage() {
           Pregled mentora.
         </h1>
         <p className="mt-4 max-w-prose text-[1.05rem] leading-relaxed text-muted">
-          Pretraži sve mentore na FER-u po imenu ili filtriraj po zavodu. Klikni
-          mentora za njegove radove i područja.
+          Pretraži sve mentore na FER-u po imenu. Klikni mentora za njegove
+          radove i područja.
         </p>
       </section>
 
@@ -113,11 +111,6 @@ export function MentorListPage() {
             </button>
           )}
         </div>
-        <ZavodSelect
-          value={zavod}
-          onChange={(v) => updateParam('zavod', v)}
-          className="w-full sm:w-52"
-        />
         <div
           role="group"
           aria-label="Sortiraj mentore"
@@ -173,8 +166,8 @@ export function MentorListPage() {
           title="Nema pronađenih mentora"
           description={
             urlQ
-              ? `Nijedan mentor ne odgovara pretrazi „${urlQ}“. Pokušaj drugačije ime ili poništi filtre.`
-              : 'Pokušaj odabrati drugi zavod ili poništiti filtar.'
+              ? `Nijedan mentor ne odgovara pretrazi „${urlQ}“. Pokušaj drugačije ime.`
+              : 'Trenutno nema dostupnih mentora.'
           }
         />
       )}
