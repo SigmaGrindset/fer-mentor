@@ -69,6 +69,18 @@ npm --prefix frontend run test:e2e       # Playwright: keyboard flow (mock API)
 
 CI (`.github/workflows/tests.yml`) pokreće sve tri grupe na svaki push.
 
+Sve gore navedeno radi nad *mockovima* — ništa od toga ne dokazuje da je
+deployana verzija ispravna. Za to postoji zaseban smoke test nad **živim**
+sustavom (Vercel + HF Space + Neon):
+
+```bash
+npm --prefix frontend run test:e2e:prod   # Playwright nad fermentor.vercel.app
+```
+
+Namjerno je izvan `testDir` glavne konfiguracije pa ga CI **ne** pokreće:
+besplatni Space ima rate limit od 15 zahtjeva/min. Pokreni ga ručno nakon
+deploya ili nakon osvježavanja podataka.
+
 ## Status
 
 Live: mentor-recommender **i** preporuka izbornih predmeta (feature #2) su
